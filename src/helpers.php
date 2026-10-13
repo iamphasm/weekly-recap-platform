@@ -200,7 +200,8 @@ function page_header(string $title, string $area = 'student'): void
             . '<a href="' . e(url('admin/logout.php')) . '">Log out</a></nav>';
     } elseif ($area === 'student' && !empty($_SESSION['student_id'])) {
         echo '<nav><span class="muted">' . e($_SESSION['student_email'] ?? '') . '</span>'
-            . '<a href="' . e(url('index.php?switch=1')) . '">Not you?</a></nav>';
+            . '<form method="post" action="' . e(url('index.php')) . '" class="inline">' . csrf_field()
+            . '<input type="hidden" name="action" value="switch"><button class="linkbtn">Not you?</button></form></nav>';
     }
     echo '</div></header><main class="wrap">';
     if ($f = flash()) {
@@ -233,6 +234,11 @@ function login_footer(string $linksHtml = ''): void
 function current_student(): ?array
 {
     if (empty($_SESSION['student_id'])) {
+        return null;
+    }
+    // A session started from a trusted device ends as soon as that device has been forgotten ("Not you?").
+    if (!empty($_SESSION['device_id']) && !q('SELECT 1 FROM device_tokens WHERE id = ?', [$_SESSION['device_id']])->fetch()) {
+        unset($_SESSION['student_id'], $_SESSION['student_email'], $_SESSION['device_id']);
         return null;
     }
     $s = q('SELECT * FROM students WHERE id = ?', [$_SESSION['student_id']])->fetch();

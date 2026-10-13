@@ -70,9 +70,13 @@ Questions lock once a student has submitted, so earlier results stay consistent.
 
 - `src/`, `config/`, `sql/`, `cron/` and `lib/` are blocked from web access by `.htaccess`. On nginx, add:
   `location ~ ^/recap/(src|config|sql|cron|lib)/ { deny all; }`
-- Student identity is verified with a 6-digit code emailed to the school address (valid 10 minutes, 5 attempts, max 5 codes per hour per email).
-  After verifying, the browser stores a secret token (only its hash is kept on the server) and signs in silently for up to a year.
-  "Not you?" forgets the browser. This requires working email sending, so set up SMTP before students use it.
+- Student identity is verified with a 6-digit code emailed to the school address (valid 10 minutes). Wrong codes are
+  limited to 10 per email per hour (counted across all codes, and serialized in the database so parallel guesses cannot
+  beat the limit), at most 5 codes are sent per email per hour, and there is a per-IP request limit.
+  A person who knows a classmate's email can therefore temporarily block that student's *new-device* login, but cannot sign in as them.
+- After verifying, the browser gets a random token in an HttpOnly cookie (only its hash is stored on the server). It signs in
+  silently for up to a year and the token is rotated weekly. "Not you?" forgets the browser and ends any session using it.
+  This requires working email sending, so set up SMTP before students use it.
 - After installing, you may delete `install.php`.
 
 ## Troubleshooting
@@ -89,4 +93,4 @@ Questions lock once a student has submitted, so earlier results stay consistent.
 
 ## Upgrading older installs
 
-If your database was created earlier, import the missing upgrade files once: `sql/upgrade_settings.sql` (Settings page) and `sql/upgrade_otp.sql` (email login codes).
+If your database was created earlier, import the missing upgrade files once: `sql/upgrade_settings.sql` (Settings page) and `sql/upgrade_otp.sql` (email login codes; the app also creates these tables itself on first use if the database user may create tables).

@@ -54,3 +54,5 @@ body.login{border-top:4px solid var(--header,#1d2327)}
 .login-links a{display:inline-block;margin-bottom:12px}
 .login-help{font-size:13px;color:#50575e;margin:0 0 16px}
 .swatch{display:flex;gap:12px;align-items:center}.swatch input[type=color]{width:56px;height:38px;padding:2px;margin:0}
+button.linkbtn{background:none;color:inherit;padding:0;margin-left:16px;font-size:14px;font-weight:400;text-decoration:underline;border-radius:0}
+.login-links button.linkbtn{margin:0 0 12px;color:#50575e;font-size:13px}
