@@ -7,6 +7,7 @@ A weekly recap quiz platform for teachers, built for plain LAMP hosting (PHP + M
 - Correct answers are shown only after submitting, and a debrief email is sent.
 - A monthly recap email goes to each student with activity that month.
 - Teachers see per-test results, per-student learning curves, and can set logo, site name and colors.
+- Teachers can change their own password under **Account** (current password required, at least 10 characters, attempts rate limited).
 
 ## Requirements
 
