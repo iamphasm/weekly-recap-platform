@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $t = q('SELECT id FROM teachers WHERE email = ?', [$email])->fetch();
             session_regenerate_id(true);
             $_SESSION['teacher_id'] = (int)$t['id'];
+            $_SESSION['teacher_ver'] = 0;
             $_SESSION['teacher_seen'] = time();
             redirect('admin/');
         }
@@ -41,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throttle_undo($ipKey); // only failures count; a success never refunds other attempts
                 session_regenerate_id(true);
                 $_SESSION['teacher_id'] = (int)$t['id'];
+                $_SESSION['teacher_ver'] = (int)($t['session_version'] ?? 0);
                 $_SESSION['teacher_seen'] = time();
                 redirect('admin/');
             }

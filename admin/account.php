@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
+ensure_auth_tables(); // also adds teachers.session_version on older installs
 $teacher = require_teacher();
-ensure_auth_tables();
 
 $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -27,7 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($new === $current) {
             $error = 'Choose a password different from the current one.';
         } else {
-            q('UPDATE teachers SET password_hash = ? WHERE id = ?', [password_hash($new, PASSWORD_DEFAULT), $teacher['id']]);
+            q('UPDATE teachers SET password_hash = ?, session_version = session_version + 1 WHERE id = ?',
+                [password_hash($new, PASSWORD_DEFAULT), $teacher['id']]);
+            // Every other session of this teacher is now invalid; keep this one.
+            $_SESSION['teacher_ver'] = (int)q('SELECT session_version FROM teachers WHERE id = ?', [$teacher['id']])->fetchColumn();
             session_regenerate_id(true);
             flash('Password changed.', 'ok');
             redirect('admin/account.php');
