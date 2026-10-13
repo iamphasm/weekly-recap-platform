@@ -1,0 +1,90 @@
+# Weekly Recap Platform
+
+A weekly recap quiz platform for teachers, built for plain LAMP hosting (PHP + MySQL, no build step).
+
+- Teachers create weekly tests (single choice, multiple choice, true/false, short text).
+- Students enter their school email (remembered in the browser) and take the test.
+- Correct answers are shown only after submitting, and a debrief email is sent.
+- A monthly recap email goes to each student with activity that month.
+- Teachers see per-test results, per-student learning curves, and can set logo, site name and colors.
+
+## Requirements
+
+- Apache with `.htaccess` enabled (`AllowOverride All`)
+- PHP 8.0 or newer with the PDO MySQL extension
+- MySQL 5.7+ or MariaDB 10.3+
+- An SMTP account for sending email (optional; PHP's built-in `mail()` is used if none is set)
+
+PHPMailer is bundled in `lib/`, so Composer is not needed.
+
+## Setup
+
+1. **Upload.** Unzip the project into a folder in your web root, e.g. `public_html/recap/`.
+   Everything stays in that one folder. The site will be at `https://yourdomain/recap/`.
+2. **Create a database.** In your hosting panel (cPanel, Plesk, etc.) create an empty MySQL database
+   and a user with all privileges on it. Note the host (usually `localhost`), database name, user and password.
+3. **Check permissions.** PHP must be able to write to `config/` (during install only) and `uploads/` (for the logo).
+   Typically folder mode `755` owned by your hosting user is enough; use `775` if the installer reports a problem.
+4. **Run the installer.** Open `https://yourdomain/recap/` in a browser. You are redirected to `install.php`, which asks for:
+   - site name, student email domain(s) (e.g. `school.no`) and timezone
+   - database details
+   - SMTP details (optional, can be changed later in `config/config.php`)
+   - the first teacher account
+
+   It creates the tables, writes `config/config.php`, logs you in and then refuses to run again.
+   If `config/` is not writable, it shows the config file contents so you can create `config/config.php` by hand.
+5. **Customize.** Log in at `https://yourdomain/recap/admin/` and open **Settings** to upload a logo and pick colors.
+   The logo and colors apply to both login pages and the header.
+6. **Create the first test.** Admin > Tests > New test. Add questions, tick *Published*, and set the open/close window.
+7. **Tell students the URL**: `https://yourdomain/recap/`.
+
+## Monthly recap email (cron)
+
+Add a cron job in your hosting panel to run on the 1st of every month. It sends the previous month's recap
+and never sends twice to the same student for the same month:
+
+```
+0 7 1 * * php /home/USER/public_html/recap/cron/monthly.php
+```
+
+To send a specific month manually: `php cron/monthly.php 2026-10`
+
+## Writing questions
+
+In the question editor, enter one option per line. Start the correct option(s) with `*`:
+
+```
+*Paris
+London
+Berlin
+```
+
+- **Single choice:** exactly one `*` line.
+- **Multiple choice:** one or more `*` lines; students must select exactly the correct set.
+- **True / False:** pick the correct answer from a dropdown.
+- **Short text:** one accepted answer per line (case and extra spaces are ignored).
+
+Questions lock once a student has submitted, so earlier results stay consistent.
+
+## Security notes
+
+- `src/`, `config/`, `sql/`, `cron/` and `lib/` are blocked from web access by `.htaccess`. On nginx, add:
+  `location ~ ^/recap/(src|config|sql|cron|lib)/ { deny all; }`
+- Student identity is the typed email, restricted to your school domain. It is not verified, so a student who
+  knows a classmate's email could take the test as them.
+- After installing, you may delete `install.php`.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| Redirected to the installer again | `config/config.php` was not written. Create it by hand from the installer output, or make `config/` writable and re-run. |
+| "Database error" in the installer | Check host, name, user and password. On some hosts the user and database names have a prefix (e.g. `cpuser_recap`). |
+| 500 error | Check the PHP version (8.0+) and that `pdo_mysql` is enabled. See the server's PHP error log. |
+| Emails not arriving | Set SMTP details in `config/config.php` (`mail` section). Check spam folders and that the from address is allowed by your SMTP provider. |
+| Logo upload fails | Make `uploads/` writable by PHP. Use PNG, JPG, GIF or WebP up to 2 MB. |
+| Internal folders reachable in the browser | `.htaccess` is being ignored: enable `AllowOverride All`, or add equivalent deny rules. |
+
+## Upgrading older installs
+
+If your database was created before the Settings page existed, import `sql/upgrade_settings.sql` once.
