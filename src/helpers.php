@@ -283,15 +283,17 @@ function require_student(): array
 function require_teacher(): array
 {
     if (!empty($_SESSION['teacher_id']) && time() - (int)($_SESSION['teacher_seen'] ?? 0) > TEACHER_IDLE_SECONDS) {
-        unset($_SESSION['teacher_id'], $_SESSION['teacher_seen']);
+        unset($_SESSION['teacher_id'], $_SESSION['teacher_seen'], $_SESSION['teacher_ver']);
         flash('You were signed out after being inactive. Please log in again.');
     }
     if (!empty($_SESSION['teacher_id'])) {
         $_SESSION['teacher_seen'] = time();
         $t = q('SELECT * FROM teachers WHERE id = ?', [$_SESSION['teacher_id']])->fetch();
-        if ($t) {
+        // A password change bumps session_version, which ends every other session of that teacher.
+        if ($t && (int)($t['session_version'] ?? 0) === (int)($_SESSION['teacher_ver'] ?? -1)) {
             return $t;
         }
+        unset($_SESSION['teacher_id'], $_SESSION['teacher_seen'], $_SESSION['teacher_ver']);
     }
     redirect('admin/login.php');
 }

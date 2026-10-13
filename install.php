@@ -77,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     @chmod(APP_ROOT . '/config/config.php', 0640);
                     session_regenerate_id(true);
                     $_SESSION['teacher_id'] = $teacherId;
+                    $_SESSION['teacher_ver'] = 0;
                     $_SESSION['teacher_seen'] = time();
                     flash('Installed! Add your logo and colors under Settings, then create your first test.', 'ok');
                     redirect('admin/');

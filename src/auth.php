@@ -22,6 +22,9 @@ function ensure_auth_tables(): void
         return;
     }
     $done = true;
+    if (!q("SHOW COLUMNS FROM teachers LIKE 'session_version'")->fetch()) {
+        db()->exec('ALTER TABLE teachers ADD COLUMN session_version INT UNSIGNED NOT NULL DEFAULT 0');
+    }
     if (!q("SHOW TABLES LIKE 'login_challenges'")->fetch() || !q("SHOW TABLES LIKE 'device_tokens'")->fetch()) {
         $sql = preg_replace('/^\s*--.*$/m', '', (string)file_get_contents(APP_ROOT . '/sql/upgrade_otp.sql'));
         foreach (array_filter(array_map('trim', explode(';', $sql))) as $stmt) {
