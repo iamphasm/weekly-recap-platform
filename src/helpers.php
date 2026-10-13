@@ -221,6 +221,7 @@ function page_header(string $title, string $area = 'student'): void
         echo '<nav><a href="' . e(url('admin/')) . '">Tests</a>'
             . '<a href="' . e(url('admin/students.php')) . '">Students</a>'
             . '<a href="' . e(url('admin/settings.php')) . '">Settings</a>'
+            . '<a href="' . e(url('admin/account.php')) . '">Account</a>'
             . '<form method="post" action="' . e(url('admin/logout.php')) . '" class="inline">' . csrf_field()
             . '<button class="linkbtn">Log out</button></form></nav>';
     } elseif ($area === 'student' && !empty($_SESSION['student_id'])) {

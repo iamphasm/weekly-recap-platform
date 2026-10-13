@@ -1,0 +1,51 @@
+<?php
+declare(strict_types=1);
+require __DIR__ . '/../src/bootstrap.php';
+$teacher = require_teacher();
+ensure_auth_tables();
+
+$error = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+    $current = (string)($_POST['current'] ?? '');
+    $new = (string)($_POST['new'] ?? '');
+    $confirm = (string)($_POST['confirm'] ?? '');
+
+    // Counted before the check so parallel guesses cannot beat the limit; a success refunds its own attempt.
+    $key = throttle_key('p', (string)$teacher['id']);
+    if (throttle_hit($key) > TEACHER_FAILS_PER_IP_HOUR) {
+        $error = 'Too many attempts. Please try again in an hour.';
+    } elseif (!password_verify($current, $teacher['password_hash'])) {
+        usleep(400000);
+        $error = 'Your current password is wrong.';
+    } else {
+        throttle_undo($key);
+        if (strlen($new) < 10) {
+            $error = 'The new password must be at least 10 characters.';
+        } elseif ($new !== $confirm) {
+            $error = 'The new passwords do not match.';
+        } elseif ($new === $current) {
+            $error = 'Choose a password different from the current one.';
+        } else {
+            q('UPDATE teachers SET password_hash = ? WHERE id = ?', [password_hash($new, PASSWORD_DEFAULT), $teacher['id']]);
+            session_regenerate_id(true);
+            flash('Password changed.', 'ok');
+            redirect('admin/account.php');
+        }
+    }
+}
+
+page_header('Account', 'admin');
+?>
+<h1>Account</h1>
+<p class="muted"><?= e($teacher['name']) ?> - <?= e($teacher['email']) ?></p>
+<form method="post" class="card" autocomplete="off">
+  <h2 style="margin-top:0">Change password</h2>
+  <?php if ($error): ?><div class="flash error"><?= e($error) ?></div><?php endif; ?>
+  <?= csrf_field() ?>
+  <label>Current password <input type="password" name="current" required autocomplete="current-password"></label>
+  <label>New password (at least 10 characters) <input type="password" name="new" required minlength="10" autocomplete="new-password"></label>
+  <label>Repeat new password <input type="password" name="confirm" required minlength="10" autocomplete="new-password"></label>
+  <button type="submit">Change password</button>
+</form>
+<?php page_footer();
