@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Count the attempt before checking the password, so parallel guesses cannot slip past the limit.
         // The limit is per IP only: someone else's failed guesses never block the real teacher on their own address.
+        // A successful login refunds just its own attempt, so successes cannot be used to reset the failure budget.
         $ipKey = throttle_key('t', client_ip());
         $mailKey = throttle_key('m', $email);
         if (throttle_hit($ipKey) > TEACHER_FAILS_PER_IP_HOUR) {
@@ -37,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Always run a hash check to keep timing similar for unknown emails.
             $hash = $t['password_hash'] ?? password_hash('x', PASSWORD_DEFAULT);
             if (password_verify($pass, $hash) && $t) {
-                throttle_reset($ipKey);
+                throttle_undo($ipKey); // only failures count; a success never refunds other attempts
                 session_regenerate_id(true);
                 $_SESSION['teacher_id'] = (int)$t['id'];
                 $_SESSION['teacher_seen'] = time();
