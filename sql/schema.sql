@@ -90,3 +90,24 @@ CREATE TABLE settings (
   k VARCHAR(60) NOT NULL PRIMARY KEY,
   v TEXT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- One-time login codes (emailed to students on a new device)
+CREATE TABLE login_codes (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(190) NOT NULL,
+  code_hash CHAR(64) NOT NULL,
+  attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL,
+  expires_at DATETIME NOT NULL,
+  KEY idx_email (email, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Trusted browsers: the secret token lives in the student's localStorage, only its hash is stored here
+CREATE TABLE device_tokens (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  student_id INT UNSIGNED NOT NULL,
+  token_hash CHAR(64) NOT NULL UNIQUE,
+  created_at DATETIME NOT NULL,
+  last_used DATETIME NOT NULL,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

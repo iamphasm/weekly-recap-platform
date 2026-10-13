@@ -3,7 +3,7 @@
 A weekly recap quiz platform for teachers, built for plain LAMP hosting (PHP + MySQL, no build step).
 
 - Teachers create weekly tests (single choice, multiple choice, true/false, short text).
-- Students enter their school email (remembered in the browser) and take the test.
+- Students enter their school email. On a new device they get a one-time code by email; after that the browser stays signed in.
 - Correct answers are shown only after submitting, and a debrief email is sent.
 - A monthly recap email goes to each student with activity that month.
 - Teachers see per-test results, per-student learning curves, and can set logo, site name and colors.
@@ -70,8 +70,9 @@ Questions lock once a student has submitted, so earlier results stay consistent.
 
 - `src/`, `config/`, `sql/`, `cron/` and `lib/` are blocked from web access by `.htaccess`. On nginx, add:
   `location ~ ^/recap/(src|config|sql|cron|lib)/ { deny all; }`
-- Student identity is the typed email, restricted to your school domain. It is not verified, so a student who
-  knows a classmate's email could take the test as them.
+- Student identity is verified with a 6-digit code emailed to the school address (valid 10 minutes, 5 attempts, max 5 codes per hour per email).
+  After verifying, the browser stores a secret token (only its hash is kept on the server) and signs in silently for up to a year.
+  "Not you?" forgets the browser. This requires working email sending, so set up SMTP before students use it.
 - After installing, you may delete `install.php`.
 
 ## Troubleshooting
@@ -81,10 +82,11 @@ Questions lock once a student has submitted, so earlier results stay consistent.
 | Redirected to the installer again | `config/config.php` was not written. Create it by hand from the installer output, or make `config/` writable and re-run. |
 | "Database error" in the installer | Check host, name, user and password. On some hosts the user and database names have a prefix (e.g. `cpuser_recap`). |
 | 500 error | Check the PHP version (8.0+) and that `pdo_mysql` is enabled. See the server's PHP error log. |
+| Students can't get a login code | Email sending is not working. Set SMTP details in `config/config.php`, then test by requesting a code. |
 | Emails not arriving | Set SMTP details in `config/config.php` (`mail` section). Check spam folders and that the from address is allowed by your SMTP provider. |
 | Logo upload fails | Make `uploads/` writable by PHP. Use PNG, JPG, GIF or WebP up to 2 MB. |
 | Internal folders reachable in the browser | `.htaccess` is being ignored: enable `AllowOverride All`, or add equivalent deny rules. |
 
 ## Upgrading older installs
 
-If your database was created before the Settings page existed, import `sql/upgrade_settings.sql` once.
+If your database was created earlier, import the missing upgrade files once: `sql/upgrade_settings.sql` (Settings page) and `sql/upgrade_otp.sql` (email login codes).

@@ -51,6 +51,8 @@ page_header('Recaps');
   </table>
 <?php endif; ?>
 <script>
-try { localStorage.setItem('recap_email', <?= json_encode($student['email']) ?>); } catch (e) {}
+try {
+  localStorage.setItem('recap_email', <?= json_encode($student['email']) ?>);
+} catch (e) {}
 </script>
 <?php page_footer();
