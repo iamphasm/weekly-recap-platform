@@ -38,7 +38,8 @@ function base_path(): string
 /** Absolute URL of the app root without trailing slash (for emails and links shown to teachers). */
 function app_url(): string
 {
-    if (PHP_SAPI === 'cli' || empty($_SERVER['HTTP_HOST'])) {
+    // Prefer the URL saved at install time: the Host header is client-controlled and must not end up in emails.
+    if (PHP_SAPI === 'cli' || empty($_SERVER['HTTP_HOST']) || cfg('base_url')) {
         return rtrim((string)cfg('base_url', ''), '/');
     }
     $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
@@ -273,4 +274,10 @@ if (!function_exists('mb_strimwidth')) {
     {
         return strlen($s) <= $width ? $s : mb_substr($s, $start, $width - strlen($trim)) . $trim;
     }
+}
+
+/** Neutralize spreadsheet formulas in user-supplied CSV cells. */
+function csv_safe(string $v): string
+{
+    return preg_match('/^[=+\-@\t\r]/', $v) ? "'" . $v : $v;
 }

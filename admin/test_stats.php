@@ -23,7 +23,7 @@ if (isset($_GET['csv'])) {
     $out = fopen('php://output', 'w');
     fputcsv($out, ['email', 'score', 'max', 'percent', 'submitted_at']);
     foreach ($attempts as $a) {
-        fputcsv($out, [$a['email'], $a['score'], $a['max_score'], pct((int)$a['score'], (int)$a['max_score']), $a['submitted_at']]);
+        fputcsv($out, [csv_safe($a['email']), $a['score'], $a['max_score'], pct((int)$a['score'], (int)$a['max_score']), $a['submitted_at']]);
     }
     exit;
 }
