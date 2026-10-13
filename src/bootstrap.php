@@ -3,6 +3,17 @@ declare(strict_types=1);
 
 define('APP_ROOT', dirname(__DIR__));
 
+// Never show PHP errors to visitors; they go to the server error log.
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
+if (PHP_SAPI !== 'cli') {
+    header('X-Frame-Options: DENY');
+    header("Content-Security-Policy: frame-ancestors 'none'");
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: same-origin');
+}
+
 $configFile = APP_ROOT . '/config/config.php';
 if (!is_file($configFile)) {
     if (PHP_SAPI === 'cli') {
@@ -40,9 +51,10 @@ require __DIR__ . '/mailer.php';
 require __DIR__ . '/auth.php';
 
 if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
+    session_name('recap_sid'); // own name and path so other apps on the same domain cannot clash with it
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => '/',
+        'path' => base_path() . '/',
         'secure' => !empty($_SERVER['HTTPS']),
         'httponly' => true,
         'samesite' => 'Lax',

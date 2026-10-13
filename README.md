@@ -77,7 +77,12 @@ Questions lock once a student has submitted, so earlier results stay consistent.
 - After verifying, the browser gets a random token in an HttpOnly cookie (only its hash is stored on the server). It signs in
   silently for up to a year and the token is rotated weekly. "Not you?" forgets the browser and ends any session using it.
   This requires working email sending, so set up SMTP before students use it.
-- After installing, you may delete `install.php`.
+- Teacher login is rate limited (10 failed attempts per IP and 20 per email per hour), and teacher sessions end after 2 hours of inactivity.
+- Pages send `X-Frame-Options: DENY`, `nosniff` and a Referrer-Policy; PHP errors are logged, never shown to visitors.
+- The session cookie is named `recap_sid`, HttpOnly, SameSite=Lax, and scoped to the app folder.
+- Behind a reverse proxy or CDN, set `'trust_proxy' => true` in `config/config.php` so rate limits use the real client IP
+  (otherwise everyone shares the proxy's address). Leave it `false` when the site is reached directly, because the header can be forged.
+- The installer is open to whoever visits first, so install right after uploading. It refuses to run again once `config/config.php` exists; you may delete `install.php` afterwards.
 
 ## Troubleshooting
 
