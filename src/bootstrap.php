@@ -37,6 +37,7 @@ require __DIR__ . '/db.php';
 require __DIR__ . '/helpers.php';
 require __DIR__ . '/grading.php';
 require __DIR__ . '/mailer.php';
+require __DIR__ . '/auth.php';
 
 if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([

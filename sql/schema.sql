@@ -91,18 +91,24 @@ CREATE TABLE settings (
   v TEXT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- One-time login codes (emailed to students on a new device)
-CREATE TABLE login_codes (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  email VARCHAR(190) NOT NULL,
-  code_hash CHAR(64) NOT NULL,
-  attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  created_at DATETIME NOT NULL,
-  expires_at DATETIME NOT NULL,
-  KEY idx_email (email, created_at)
+-- One-time login codes: one row per email, locked (FOR UPDATE) while verifying so guesses cannot race.
+CREATE TABLE login_challenges (
+  email VARCHAR(190) NOT NULL PRIMARY KEY,
+  code_hash CHAR(64) NULL,
+  expires_at DATETIME NULL,
+  last_sent DATETIME NULL,
+  requests INT UNSIGNED NOT NULL DEFAULT 0,   -- codes sent in the current hour
+  attempts INT UNSIGNED NOT NULL DEFAULT 0,   -- wrong codes in the current hour
+  window_start DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Trusted browsers: the secret token lives in the student's localStorage, only its hash is stored here
+CREATE TABLE login_ips (
+  ip VARCHAR(45) NOT NULL PRIMARY KEY,
+  hits INT UNSIGNED NOT NULL DEFAULT 0,
+  window_start DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Trusted browsers: the secret token lives in an HttpOnly cookie, only its hash is stored here
 CREATE TABLE device_tokens (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   student_id INT UNSIGNED NOT NULL,
