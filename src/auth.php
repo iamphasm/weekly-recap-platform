@@ -11,7 +11,7 @@ const REQUESTS_PER_IP_HOUR = 100;    // generous: a whole classroom may share on
 const DEVICE_TTL_DAYS = 365;
 const DEVICE_ROTATE_DAYS = 7;
 const TEACHER_FAILS_PER_IP_HOUR = 10;
-const TEACHER_FAILS_PER_EMAIL_HOUR = 20;
+const TEACHER_SLOWDOWN_AFTER_EMAIL_FAILS = 20; // slows guessing against one account without ever locking the real teacher out
 const DEVICE_COOKIE = 'recap_device';
 
 /** Create the sign-in tables if an older install is missing them (needs the CREATE privilege). */
@@ -52,15 +52,24 @@ function throttle_peek(string $key): int
     return ($r && strtotime($r['window_start']) >= time() - 3600) ? (int)$r['hits'] : 0;
 }
 
-/** Record a hit for a key (hourly window) and return the new total. */
+/**
+ * Record a hit for a key (hourly window) and return this request's own total.
+ * LAST_INSERT_ID(expr) hands back the value this statement wrote, so parallel requests each get a distinct count.
+ */
 function throttle_hit(string $key): int
 {
     $now = now_s();
     $cut = date('Y-m-d H:i:s', time() - 3600);
     q('INSERT INTO login_ips (ip, hits, window_start) VALUES (?,1,?)
-       ON DUPLICATE KEY UPDATE hits = IF(window_start < ?, 1, hits + 1), window_start = IF(window_start < ?, ?, window_start)',
+       ON DUPLICATE KEY UPDATE hits = LAST_INSERT_ID(IF(window_start < ?, 1, hits + 1)), window_start = IF(window_start < ?, ?, window_start)',
         [$key, $now, $cut, $cut, $now]);
-    return (int)q('SELECT hits FROM login_ips WHERE ip = ?', [$key])->fetchColumn();
+    $n = (int)db()->lastInsertId();
+    return $n > 0 ? $n : 1; // 0 means a brand-new row
+}
+
+function throttle_reset(string $key): void
+{
+    q('DELETE FROM login_ips WHERE ip = ?', [$key]);
 }
 
 /** Count a code request from this IP; false once the hourly limit is exceeded. */
