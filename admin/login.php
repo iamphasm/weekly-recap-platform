@@ -25,23 +25,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('admin/');
         }
     } else {
+        // Count the attempt before checking the password, so parallel guesses cannot slip past the limit.
+        // The limit is per IP only: someone else's failed guesses never block the real teacher on their own address.
         $ipKey = throttle_key('t', client_ip());
         $mailKey = throttle_key('m', $email);
-        if (throttle_peek($ipKey) >= TEACHER_FAILS_PER_IP_HOUR || throttle_peek($mailKey) >= TEACHER_FAILS_PER_EMAIL_HOUR) {
+        if (throttle_hit($ipKey) > TEACHER_FAILS_PER_IP_HOUR) {
             usleep(400000);
-            $error = 'Too many failed login attempts. Please try again in an hour.';
+            $error = 'Too many login attempts from your network. Please try again in an hour.';
         } else {
             $t = q('SELECT * FROM teachers WHERE email = ?', [$email])->fetch();
             // Always run a hash check to keep timing similar for unknown emails.
             $hash = $t['password_hash'] ?? password_hash('x', PASSWORD_DEFAULT);
             if (password_verify($pass, $hash) && $t) {
+                throttle_reset($ipKey);
                 session_regenerate_id(true);
                 $_SESSION['teacher_id'] = (int)$t['id'];
                 $_SESSION['teacher_seen'] = time();
                 redirect('admin/');
             }
-            throttle_hit($ipKey);
-            throttle_hit($mailKey);
+            if (throttle_hit($mailKey) > TEACHER_SLOWDOWN_AFTER_EMAIL_FAILS) {
+                sleep(2); // many failures against this account from anywhere: make each guess slower
+            }
             usleep(400000);
             $error = 'Wrong email or password.';
         }
