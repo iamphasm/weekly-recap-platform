@@ -3,6 +3,8 @@
 return [
     'base_url' => 'https://example.com/recap',   // public URL, no trailing slash
     'site_name' => 'Weekly Recap',
+    // Set true only if the site is behind a reverse proxy/CDN that appends the real client IP to X-Forwarded-For.
+    'trust_proxy' => false,
     'timezone' => 'Europe/Oslo',
     // Students may only use emails from these domains (lowercase, without @). Empty array = allow any.
     'school_domains' => ['school.example'],

@@ -52,7 +52,7 @@ page_header('Recaps');
 <?php endif; ?>
 <script>
 try {
-  localStorage.setItem('recap_email', <?= json_encode($student['email']) ?>);
+  localStorage.setItem('recap_email', <?= json_encode($student['email'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
 } catch (e) {}
 </script>
 <?php page_footer();

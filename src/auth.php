@@ -10,6 +10,8 @@ const MAX_FAILS_PER_HOUR = 10;       // wrong codes per email, counted across al
 const REQUESTS_PER_IP_HOUR = 100;    // generous: a whole classroom may share one school IP
 const DEVICE_TTL_DAYS = 365;
 const DEVICE_ROTATE_DAYS = 7;
+const TEACHER_FAILS_PER_IP_HOUR = 10;
+const TEACHER_FAILS_PER_EMAIL_HOUR = 20;
 const DEVICE_COOKIE = 'recap_device';
 
 /** Create the sign-in tables if an older install is missing them (needs the CREATE privilege). */
@@ -38,15 +40,33 @@ function now_s(): string
     return date('Y-m-d H:i:s');
 }
 
-/** Count a code request from this IP; false once the hourly limit is exceeded. */
-function ip_allow(string $ip): bool
+function throttle_key(string $kind, string $value): string
+{
+    return substr($kind . md5($value), 0, 40);
+}
+
+/** Hits recorded for a key in the current hour. */
+function throttle_peek(string $key): int
+{
+    $r = q('SELECT hits, window_start FROM login_ips WHERE ip = ?', [$key])->fetch();
+    return ($r && strtotime($r['window_start']) >= time() - 3600) ? (int)$r['hits'] : 0;
+}
+
+/** Record a hit for a key (hourly window) and return the new total. */
+function throttle_hit(string $key): int
 {
     $now = now_s();
     $cut = date('Y-m-d H:i:s', time() - 3600);
     q('INSERT INTO login_ips (ip, hits, window_start) VALUES (?,1,?)
        ON DUPLICATE KEY UPDATE hits = IF(window_start < ?, 1, hits + 1), window_start = IF(window_start < ?, ?, window_start)',
-        [$ip, $now, $cut, $cut, $now]);
-    return (int)q('SELECT hits FROM login_ips WHERE ip = ?', [$ip])->fetchColumn() <= REQUESTS_PER_IP_HOUR;
+        [$key, $now, $cut, $cut, $now]);
+    return (int)q('SELECT hits FROM login_ips WHERE ip = ?', [$key])->fetchColumn();
+}
+
+/** Count a code request from this IP; false once the hourly limit is exceeded. */
+function ip_allow(string $ip): bool
+{
+    return throttle_hit(throttle_key('i', $ip)) <= REQUESTS_PER_IP_HOUR;
 }
 
 /**

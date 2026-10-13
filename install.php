@@ -42,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'base_url' => app_url(),
             'site_name' => $f['site_name'] ?: 'Weekly Recap',
             'timezone' => $f['timezone'],
+            'trust_proxy' => false,
             'school_domains' => $domains,
             'db' => ['host' => $f['db_host'] ?: 'localhost', 'name' => $f['db_name'], 'user' => $f['db_user'], 'pass' => $f['db_pass']],
             'mail' => [
@@ -76,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     @chmod(APP_ROOT . '/config/config.php', 0640);
                     session_regenerate_id(true);
                     $_SESSION['teacher_id'] = $teacherId;
+                    $_SESSION['teacher_seen'] = time();
                     flash('Installed! Add your logo and colors under Settings, then create your first test.', 'ok');
                     redirect('admin/');
                 }

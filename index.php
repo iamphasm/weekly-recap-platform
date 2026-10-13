@@ -27,7 +27,7 @@ if ($action === 'email') {
     if (!is_school_email($email)) {
         $domains = cfg('school_domains', []);
         $error = 'Please enter your school email' . ($domains ? ' (@' . implode(', @', $domains) . ')' : '') . '.';
-    } elseif (!ip_allow((string)($_SERVER['REMOTE_ADDR'] ?? ''))) {
+    } elseif (!ip_allow(client_ip())) {
         $error = 'Too many requests from your network. Please try again later.';
     } else {
         [$status, $code] = create_login_code($email);

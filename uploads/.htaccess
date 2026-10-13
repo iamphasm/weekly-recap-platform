@@ -1,3 +1,14 @@
-php_flag engine off
-RemoveHandler .php .phtml .php5
 Options -Indexes
+# Never execute scripts from this folder (the guards keep this file valid on PHP-FPM/CGI hosts too).
+<IfModule mod_php.c>
+php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+php_flag engine off
+</IfModule>
+<FilesMatch "\.(php|phtml|php[0-9]|phar|pl|py|cgi)$">
+Require all denied
+</FilesMatch>

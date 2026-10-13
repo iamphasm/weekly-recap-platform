@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+const TEACHER_IDLE_SECONDS = 7200;
+
 function cfg(string $key, $default = null)
 {
     $v = $GLOBALS['CONFIG'];
@@ -55,6 +57,20 @@ function redirect(string $path): never
 {
     header('Location: ' . url($path));
     exit;
+}
+
+/** Visitor IP. Only trusts X-Forwarded-For when config 'trust_proxy' is true (the last hop is the one our proxy added). */
+function client_ip(): string
+{
+    $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    if (cfg('trust_proxy') && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $parts = array_map('trim', explode(',', (string)$_SERVER['HTTP_X_FORWARDED_FOR']));
+        $last = end($parts);
+        if (filter_var($last, FILTER_VALIDATE_IP)) {
+            $ip = $last;
+        }
+    }
+    return $ip;
 }
 
 function csrf_token(): string
@@ -197,7 +213,8 @@ function page_header(string $title, string $area = 'student'): void
         echo '<nav><a href="' . e(url('admin/')) . '">Tests</a>'
             . '<a href="' . e(url('admin/students.php')) . '">Students</a>'
             . '<a href="' . e(url('admin/settings.php')) . '">Settings</a>'
-            . '<a href="' . e(url('admin/logout.php')) . '">Log out</a></nav>';
+            . '<form method="post" action="' . e(url('admin/logout.php')) . '" class="inline">' . csrf_field()
+            . '<button class="linkbtn">Log out</button></form></nav>';
     } elseif ($area === 'student' && !empty($_SESSION['student_id'])) {
         echo '<nav><span class="muted">' . e($_SESSION['student_email'] ?? '') . '</span>'
             . '<form method="post" action="' . e(url('index.php')) . '" class="inline">' . csrf_field()
@@ -256,7 +273,12 @@ function require_student(): array
 
 function require_teacher(): array
 {
+    if (!empty($_SESSION['teacher_id']) && time() - (int)($_SESSION['teacher_seen'] ?? 0) > TEACHER_IDLE_SECONDS) {
+        unset($_SESSION['teacher_id'], $_SESSION['teacher_seen']);
+        flash('You were signed out after being inactive. Please log in again.');
+    }
     if (!empty($_SESSION['teacher_id'])) {
+        $_SESSION['teacher_seen'] = time();
         $t = q('SELECT * FROM teachers WHERE id = ?', [$_SESSION['teacher_id']])->fetch();
         if ($t) {
             return $t;
