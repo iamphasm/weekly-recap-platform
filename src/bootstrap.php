@@ -55,7 +55,7 @@ if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
         'lifetime' => 0,
         'path' => base_path() . '/',
-        'secure' => !empty($_SERVER['HTTPS']),
+        'secure' => is_https(),
         'httponly' => true,
         'samesite' => 'Lax',
     ]);

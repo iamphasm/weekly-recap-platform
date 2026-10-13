@@ -78,6 +78,8 @@ Questions lock once a student has submitted, so earlier results stay consistent.
   silently for up to a year and the token is rotated weekly. "Not you?" forgets the browser and ends any session using it.
   This requires working email sending, so set up SMTP before students use it.
 - Teacher login is limited to 10 attempts per IP per hour (counted before the password is checked, so parallel guesses can't beat it; a successful login refunds only its own attempt, so successes can't be used to reset the budget). Failures against one account from many addresses only slow guessing down; they never lock the real teacher out. Teacher sessions end after 2 hours of inactivity.
+- Stale sign-in bookkeeping (old code records, rate-limit counters, expired device tokens) is pruned automatically.
+- Session and device cookies are marked Secure over HTTPS, including behind a proxy when `trust_proxy` is on.
 - Pages send `X-Frame-Options: DENY`, `nosniff` and a Referrer-Policy; PHP errors are logged, never shown to visitors.
 - The session cookie is named `recap_sid`, HttpOnly, SameSite=Lax, and scoped to the app folder.
 - Behind a reverse proxy or CDN, set `'trust_proxy' => true` in `config/config.php` so rate limits use the real client IP

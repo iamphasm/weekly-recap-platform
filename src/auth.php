@@ -40,6 +40,22 @@ function now_s(): string
     return date('Y-m-d H:i:s');
 }
 
+/** Delete stale sign-in bookkeeping so the tables cannot grow without limit. Cheap enough to run now and then. */
+function prune_auth_tables(): void
+{
+    $day = date('Y-m-d H:i:s', time() - 86400);
+    q('DELETE FROM login_challenges WHERE window_start < ? AND (expires_at IS NULL OR expires_at < ?)', [$day, now_s()]);
+    q('DELETE FROM login_ips WHERE window_start < ?', [$day]);
+    q('DELETE FROM device_tokens WHERE last_used < ?', [date('Y-m-d H:i:s', time() - DEVICE_TTL_DAYS * 86400)]);
+}
+
+function maybe_prune_auth_tables(): void
+{
+    if (random_int(1, 50) === 1) {
+        prune_auth_tables();
+    }
+}
+
 function throttle_key(string $kind, string $value): string
 {
     return substr($kind . md5($value), 0, 40);
@@ -58,6 +74,7 @@ function throttle_peek(string $key): int
  */
 function throttle_hit(string $key): int
 {
+    maybe_prune_auth_tables();
     $now = now_s();
     $cut = date('Y-m-d H:i:s', time() - 3600);
     q('INSERT INTO login_ips (ip, hits, window_start) VALUES (?,1,?)
@@ -85,6 +102,7 @@ function ip_allow(string $ip): bool
  */
 function create_login_code(string $email): array
 {
+    maybe_prune_auth_tables();
     $pdo = db();
     $now = time();
     $pdo->beginTransaction();
@@ -181,7 +199,7 @@ function set_device_cookie(?string $token): void
     setcookie(DEVICE_COOKIE, $token ?? '', [
         'expires' => $token === null ? time() - 3600 : time() + DEVICE_TTL_DAYS * 86400,
         'path' => $path,
-        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'secure' => is_https(),
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
