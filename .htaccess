@@ -1,0 +1,12 @@
+# Keep internal folders and files private when the whole project sits in the web root.
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule ^(src|config|sql|cron|lib|vendor)(/|$) - [F,L]
+RewriteRule ^(composer\.(json|lock)|.*\.(md|sql))$ - [F,L]
+</IfModule>
+<IfModule !mod_rewrite.c>
+RedirectMatch 403 ^.*/(src|config|sql|cron|lib|vendor)(/|$)
+</IfModule>

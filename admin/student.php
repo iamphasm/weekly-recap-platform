@@ -1,0 +1,59 @@
+<?php
+declare(strict_types=1);
+require __DIR__ . '/../src/bootstrap.php';
+require_teacher();
+
+$id = (int)($_GET['id'] ?? 0);
+$student = q('SELECT * FROM students WHERE id = ?', [$id])->fetch();
+if (!$student) {
+    redirect('admin/students.php');
+}
+$attempts = q('SELECT a.*, t.title FROM attempts a JOIN tests t ON t.id = a.test_id WHERE a.student_id = ? ORDER BY a.submitted_at', [$id])->fetchAll();
+$points = array_map(fn($a) => pct((int)$a['score'], (int)$a['max_score']), $attempts);
+
+// Inline SVG learning curve
+function curve_svg(array $points): string
+{
+    $w = 760; $h = 220; $pl = 36; $pr = 12; $pt = 12; $pb = 24;
+    $n = count($points);
+    if ($n === 0) {
+        return '';
+    }
+    $x = fn($i) => $n === 1 ? $pl + ($w - $pl - $pr) / 2 : $pl + $i * ($w - $pl - $pr) / ($n - 1);
+    $y = fn($v) => $pt + (100 - $v) * ($h - $pt - $pb) / 100;
+    $svg = '<svg viewBox="0 0 ' . $w . ' ' . $h . '" width="100%" role="img" aria-label="Score per recap over time">';
+    foreach ([0, 25, 50, 75, 100] as $g) {
+        $svg .= '<line x1="' . $pl . '" x2="' . ($w - $pr) . '" y1="' . $y($g) . '" y2="' . $y($g) . '" stroke="#e5e7eb"/>'
+            . '<text x="' . ($pl - 6) . '" y="' . ($y($g) + 4) . '" font-size="11" text-anchor="end" fill="#6b7280">' . $g . '%</text>';
+    }
+    $d = '';
+    foreach ($points as $i => $v) {
+        $d .= ($i ? 'L' : 'M') . round($x($i), 1) . ' ' . round($y($v), 1) . ' ';
+    }
+    $svg .= '<path d="' . $d . '" fill="none" stroke="#2563eb" stroke-width="2.5"/>';
+    foreach ($points as $i => $v) {
+        $svg .= '<circle cx="' . round($x($i), 1) . '" cy="' . round($y($v), 1) . '" r="4" fill="#2563eb"/>'
+            . '<text x="' . round($x($i), 1) . '" y="' . round($y($v) - 8, 1) . '" font-size="11" text-anchor="middle" fill="#1f2937">' . $v . '</text>';
+    }
+    return $svg . '</svg>';
+}
+
+page_header($student['email'], 'admin');
+?>
+<h1><?= e($student['email']) ?></h1>
+<p class="muted">First seen <?= e(fmt_dt($student['first_seen'])) ?> - <?= count($attempts) ?> recap(s) completed
+  <?php if ($points): ?> - average <?= (int)round(array_sum($points) / count($points)) ?>%<?php endif; ?></p>
+<?php if ($attempts): ?>
+  <div class="card"><?= curve_svg($points) ?></div>
+  <table>
+    <tr><th>Recap</th><th>Submitted</th><th>Score</th></tr>
+    <?php foreach (array_reverse($attempts) as $a): ?>
+      <tr><td><a href="<?= e(url('admin/test_stats.php?id=' . $a['test_id'])) ?>"><?= e($a['title']) ?></a></td>
+        <td><?= e(fmt_dt($a['submitted_at'])) ?></td>
+        <td><?= (int)$a['score'] ?>/<?= (int)$a['max_score'] ?> (<?= pct((int)$a['score'], (int)$a['max_score']) ?>%)</td></tr>
+    <?php endforeach; ?>
+  </table>
+<?php else: ?>
+  <p>No recaps completed yet.</p>
+<?php endif; ?>
+<?php page_footer();
