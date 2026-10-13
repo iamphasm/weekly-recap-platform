@@ -67,9 +67,10 @@ function throttle_hit(string $key): int
     return $n > 0 ? $n : 1; // 0 means a brand-new row
 }
 
-function throttle_reset(string $key): void
+/** Give back one hit (a successful attempt must not use up the budget meant for failures). */
+function throttle_undo(string $key): void
 {
-    q('DELETE FROM login_ips WHERE ip = ?', [$key]);
+    q('UPDATE login_ips SET hits = GREATEST(hits, 1) - 1 WHERE ip = ?', [$key]);
 }
 
 /** Count a code request from this IP; false once the hourly limit is exceeded. */
