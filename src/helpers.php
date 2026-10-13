@@ -44,8 +44,7 @@ function app_url(): string
     if (PHP_SAPI === 'cli' || empty($_SERVER['HTTP_HOST']) || cfg('base_url')) {
         return rtrim((string)cfg('base_url', ''), '/');
     }
-    $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
-    return ($https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . base_path();
+    return (is_https() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . base_path();
 }
 
 function url(string $path = ''): string
@@ -57,6 +56,15 @@ function redirect(string $path): never
 {
     header('Location: ' . url($path));
     exit;
+}
+
+/** True when the visitor reached us over HTTPS (also behind a proxy, if trust_proxy is on). */
+function is_https(): bool
+{
+    if (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') {
+        return true;
+    }
+    return (bool)cfg('trust_proxy') && strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
 }
 
 /** Visitor IP. Only trusts X-Forwarded-For when config 'trust_proxy' is true (the last hop is the one our proxy added). */
