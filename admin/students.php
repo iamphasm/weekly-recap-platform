@@ -16,13 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $now = date('Y-m-d H:i:s');
         q('INSERT INTO students (email, name, first_seen, last_seen) VALUES (?,?,?,?)
            ON DUPLICATE KEY UPDATE name = IF(VALUES(name) IS NULL, name, VALUES(name))', [$email, $name === '' ? null : $name, $now, $now]);
-        $r = send_student_invite($email, $name);
-        if ($r === 'sent') {
-            flash("Student added. A login code was emailed to $email.", 'ok');
-        } elseif ($r === 'recent') {
-            flash("Student added. A code was emailed to $email a moment ago; they can also request one on the login page.", 'ok');
+        if (send_student_invite($email, $name)) {
+            flash("Student added. An invitation was emailed to $email; they get their login code when they enter their email on the login page.", 'ok');
         } else {
-            flash("Student added, but the email to $email could not be sent (check the mail settings, or the limit on codes per hour). They can request a code on the login page.");
+            flash("Student added, but the email to $email could not be sent (check the mail settings). They can still log in with their school email.");
         }
     }
     redirect('admin/students.php');
@@ -37,12 +34,12 @@ page_header('Students', 'admin');
 <h1>Students</h1>
 <form method="post" class="card">
   <?= csrf_field() ?>
-  <b>Add student</b> <span class="muted small">- they get an email with a login code. Adding an existing email updates the name.</span>
+  <b>Add student</b> <span class="muted small">- they get an invitation email. Adding an existing email updates the name.</span>
   <div class="grid2">
     <label>School email <input type="email" name="email" required></label>
     <label>Name <span class="muted small">(optional)</span> <input type="text" name="name" maxlength="120"></label>
   </div>
-  <button type="submit">Add and send code</button>
+  <button type="submit">Add and send invitation</button>
 </form>
 <table>
   <tr><th>Student</th><th>Recaps done</th><th>Average</th><th>Latest</th><th>Last seen</th></tr>

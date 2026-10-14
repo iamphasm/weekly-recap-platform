@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
+ensure_auth_tables(); // adds the timer column/table on older installs
 $teacher = require_teacher();
 
 $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
@@ -29,12 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $desc = trim((string)($_POST['description'] ?? '')) ?: null;
         $pub = isset($_POST['published']) ? 1 : 0;
+        $limit = (int)($_POST['time_limit_min'] ?? 0);
+        $limit = ($limit >= 1 && $limit <= 600) ? $limit : null;
         if ($id) {
-            q('UPDATE tests SET title=?, description=?, opens_at=?, closes_at=?, published=? WHERE id=?',
-                [$title, $desc, $opens, $closes, $pub, $id]);
+            q('UPDATE tests SET title=?, description=?, opens_at=?, closes_at=?, published=?, time_limit_min=? WHERE id=?',
+                [$title, $desc, $opens, $closes, $pub, $limit, $id]);
         } else {
-            q('INSERT INTO tests (title, description, opens_at, closes_at, published, created_by, created_at) VALUES (?,?,?,?,?,?,?)',
-                [$title, $desc, $opens, $closes, $pub, $teacher['id'], date('Y-m-d H:i:s')]);
+            q('INSERT INTO tests (title, description, opens_at, closes_at, published, time_limit_min, created_by, created_at) VALUES (?,?,?,?,?,?,?,?)',
+                [$title, $desc, $opens, $closes, $pub, $limit, $teacher['id'], date('Y-m-d H:i:s')]);
             $id = (int)db()->lastInsertId();
         }
         flash('Saved.', 'ok');
@@ -103,6 +106,8 @@ page_header($test ? 'Edit test' : 'New test', 'admin');
     <label>Opens <input type="datetime-local" name="opens_at" required value="<?= e($local($defOpen)) ?>"></label>
     <label>Closes <input type="datetime-local" name="closes_at" required value="<?= e($local($defClose)) ?>"></label>
   </div>
+  <label>Time limit in minutes <span class="muted small">(optional. The countdown starts when the student presses Start; when it reaches zero the answers are submitted automatically.)</span>
+    <input type="number" name="time_limit_min" min="1" max="600" value="<?= e((string)($test['time_limit_min'] ?? '')) ?>" placeholder="No limit"></label>
   <label><input type="checkbox" name="published" value="1" <?= !empty($test['published']) ? 'checked' : '' ?>> Published (visible to students during the window)</label>
   <button type="submit">Save test</button>
 </form>

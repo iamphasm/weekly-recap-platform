@@ -25,6 +25,7 @@ CREATE TABLE tests (
   opens_at DATETIME NOT NULL,
   closes_at DATETIME NOT NULL,
   published TINYINT(1) NOT NULL DEFAULT 0,
+  time_limit_min SMALLINT UNSIGNED NULL,             -- minutes allowed once a student starts; NULL = untimed
   created_by INT UNSIGNED NULL,
   created_at DATETIME NOT NULL,
   KEY idx_window (published, opens_at, closes_at),
@@ -78,6 +79,16 @@ CREATE TABLE answers (
   KEY idx_question (question_id),
   FOREIGN KEY (attempt_id) REFERENCES attempts(id) ON DELETE CASCADE,
   FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- When a student pressed Start on a timed test (the deadline is started_at + tests.time_limit_min)
+CREATE TABLE test_starts (
+  test_id INT UNSIGNED NOT NULL,
+  student_id INT UNSIGNED NOT NULL,
+  started_at DATETIME NOT NULL,
+  PRIMARY KEY (test_id, student_id),
+  FOREIGN KEY (test_id) REFERENCES tests(id) ON DELETE CASCADE,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE monthly_log (

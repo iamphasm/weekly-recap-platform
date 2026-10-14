@@ -28,6 +28,15 @@ function ensure_auth_tables(): void
     if (!q("SHOW COLUMNS FROM students LIKE 'name'")->fetch()) {
         db()->exec('ALTER TABLE students ADD COLUMN name VARCHAR(120) NULL AFTER email');
     }
+    if (!q("SHOW COLUMNS FROM tests LIKE 'time_limit_min'")->fetch()) {
+        db()->exec('ALTER TABLE tests ADD COLUMN time_limit_min SMALLINT UNSIGNED NULL AFTER published');
+    }
+    db()->exec('CREATE TABLE IF NOT EXISTS test_starts (
+        test_id INT UNSIGNED NOT NULL, student_id INT UNSIGNED NOT NULL, started_at DATETIME NOT NULL,
+        PRIMARY KEY (test_id, student_id),
+        FOREIGN KEY (test_id) REFERENCES tests(id) ON DELETE CASCADE,
+        FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
     if (!q("SHOW TABLES LIKE 'login_challenges'")->fetch() || !q("SHOW TABLES LIKE 'device_tokens'")->fetch()) {
         $sql = preg_replace('/^\s*--.*$/m', '', (string)file_get_contents(APP_ROOT . '/sql/upgrade_otp.sql'));
         foreach (array_filter(array_map('trim', explode(';', $sql))) as $stmt) {
@@ -106,7 +115,7 @@ function ip_allow(string $ip): bool
  * Prepare a new code for $email. Returns [status, code]; status is one of
  * 'sent' (caller must email $code), 'cooldown' (a code was just sent, nothing to do), 'limited', 'locked'.
  */
-function create_login_code(string $email, int $ttlMin = CODE_TTL_MIN): array
+function create_login_code(string $email): array
 {
     maybe_prune_auth_tables();
     $pdo = db();
@@ -137,7 +146,7 @@ function create_login_code(string $email, int $ttlMin = CODE_TTL_MIN): array
         }
         $code = sprintf('%06d', random_int(0, 999999));
         q('UPDATE login_challenges SET code_hash = ?, expires_at = ?, last_sent = ?, requests = ?, attempts = ?, window_start = ? WHERE email = ?',
-            [code_hash($email, $code), date('Y-m-d H:i:s', $now + $ttlMin * 60), now_s(), $r['requests'] + 1, $r['attempts'], $windowStart, $email]);
+            [code_hash($email, $code), date('Y-m-d H:i:s', $now + CODE_TTL_MIN * 60), now_s(), $r['requests'] + 1, $r['attempts'], $windowStart, $email]);
         $pdo->commit();
         return ['sent', $code];
     } catch (Throwable $e) {
