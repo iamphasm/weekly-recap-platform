@@ -263,9 +263,18 @@ function page_header(string $title, string $area = 'student'): void
     }
 }
 
+/** "Weekly Recap Platform x.y" under the box. Always shown to logged-in teachers; students and visitors can have it switched off in Settings. */
+function footer_html(): string
+{
+    if (!cfg('db') || (empty($_SESSION['teacher_id']) && setting('show_footer') === '0')) {
+        return '';
+    }
+    return '<footer class="sitefoot"><a href="' . e(url('about.php')) . '">Weekly Recap Platform ' . e(APP_VERSION) . '</a></footer>';
+}
+
 function page_footer(): void
 {
-    echo '</main></div></body></html>';
+    echo '</main></div>' . footer_html() . '</body></html>';
 }
 
 /** WordPress-style centered login layout: logo, white card, links underneath. */
@@ -280,7 +289,7 @@ function login_header(string $title): void
 
 function login_footer(string $linksHtml = ''): void
 {
-    echo ($linksHtml ? '<p class="login-links">' . $linksHtml . '</p>' : '') . '</div></body></html>';
+    echo ($linksHtml ? '<p class="login-links">' . $linksHtml . '</p>' : '') . '</div>' . footer_html() . '</body></html>';
 }
 
 // ---- auth ----
