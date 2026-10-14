@@ -231,9 +231,10 @@ function html_head(string $title, string $bodyClass = ''): void
         . '</head><body class="' . e($bodyClass) . '">';
 }
 
-function brand_html(int $logoHeight = 0): string
+/** Logo (or the site name) for the header ('logo') or the login pages ('login_logo', which falls back to the header logo). */
+function brand_html(string $which = 'logo'): string
 {
-    $logo = logo_url();
+    $logo = ($which === 'login_logo' ? upload_url('login_logo') : null) ?: logo_url();
     if ($logo) {
         return '<img class="logo" src="' . e($logo) . '" alt="' . e(site_name()) . '">';
     }
@@ -281,7 +282,7 @@ function page_footer(): void
 function login_header(string $title): void
 {
     html_head($title, 'login');
-    echo '<div class="login"><h1 class="login-logo"><a href="' . e(url('')) . '">' . brand_html() . '</a></h1>';
+    echo '<div class="login"><h1 class="login-logo"><a href="' . e(url('')) . '">' . brand_html('login_logo') . '</a></h1>';
     if ($f = flash()) {
         echo '<div class="login-msg ' . e($f[0]) . '">' . e($f[1]) . '</div>';
     }
@@ -289,7 +290,8 @@ function login_header(string $title): void
 
 function login_footer(string $linksHtml = ''): void
 {
-    echo ($linksHtml ? '<p class="login-links">' . $linksHtml . '</p>' : '') . '</div>' . footer_html() . '</body></html>';
+    // Under the box, all centered: version footer first, then the links.
+    echo '</div>' . footer_html() . ($linksHtml ? '<p class="login-links">' . $linksHtml . '</p>' : '') . '</body></html>';
 }
 
 // ---- auth ----

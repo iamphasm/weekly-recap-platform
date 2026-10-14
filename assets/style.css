@@ -37,7 +37,7 @@ th{background:#f9fafb;font-size:13px}
 
 /* WordPress-style login */
 body.login{border-top:4px solid var(--header,#1d2327);min-height:100vh}
-.login{width:440px;max-width:calc(100% - 32px);margin:0 auto;padding:8% 0 40px}
+.login{width:440px;max-width:calc(100% - 32px);margin:0 auto;padding:8% 0 0}
 .login-logo{margin:0 0 24px;text-align:center;font-size:24px;font-weight:600}
 .login-logo a{color:#3c434a;text-decoration:none;display:inline-block}
 .login-logo .logo{height:var(--logo-login-h,84px);max-width:100%;margin:0 auto}
@@ -51,13 +51,13 @@ body.login{border-top:4px solid var(--header,#1d2327);min-height:100vh}
 .pw-wrap button{position:absolute;right:0;top:4px;float:none;background:none;color:var(--primary);min-height:32px;padding:0 8px;font-size:18px}
 .login-msg{border-left:4px solid #d63638;background:#fff;padding:12px;margin:0 0 16px;box-shadow:0 1px 1px rgba(0,0,0,.04);font-size:13px}
 .login-msg.ok{border-left-color:#00a32a}
-.login-links{padding:0 24px;margin:24px 0 0;font-size:13px}
+.login-links{text-align:center;padding:0 16px;margin:8px 0 0;font-size:13px;line-height:2}
 .login-links a{color:#50575e}.login-links a:hover{color:var(--primary)}
-.login-links a{display:inline-block;margin-bottom:12px}
+.login-links a{display:inline-block}
 .login-help{font-size:13px;color:#50575e;margin:0 0 16px}
 .swatch{display:flex;gap:12px;align-items:center}.swatch input[type=color]{width:56px;height:38px;padding:2px;margin:0}
 button.linkbtn{background:none;color:inherit;padding:0;margin-left:16px;font-size:14px;font-weight:400;text-decoration:underline;border-radius:0}
-.login-links button.linkbtn{margin:0 0 12px;color:#50575e;font-size:13px}
+.login-links button.linkbtn{margin:0;color:#50575e;font-size:13px}
 
 /* Countdown for timed tests: beside the box on wide screens, a bar across the top on narrow ones */
 .timer{position:fixed;top:90px;right:16px;width:130px;padding:12px;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);z-index:10}
@@ -75,6 +75,8 @@ button.linkbtn{background:none;color:inherit;padding:0;margin-left:16px;font-siz
 @media(max-width:600px){.match{grid-template-columns:1fr}}
 
 /* Footer under the box */
-.sitefoot{text-align:center;font-size:13px;margin:16px auto 28px}
+.sitefoot{text-align:center;font-size:13px;margin:16px auto 10px}
+.sitefoot:last-child{margin-bottom:28px}
+.login-links:last-child{margin-bottom:32px}
 .sitefoot a{color:#1f2937;background:rgba(255,255,255,.8);padding:5px 12px;border-radius:14px;text-decoration:none}
 .sitefoot a:hover{background:#fff;text-decoration:underline}
