@@ -37,7 +37,7 @@ th{background:#f9fafb;font-size:13px}
 
 /* WordPress-style login */
 body.login{border-top:4px solid var(--header,#1d2327);min-height:100vh}
-.login{width:320px;max-width:calc(100% - 32px);margin:0 auto;padding:8% 0 40px}
+.login{width:440px;max-width:calc(100% - 32px);margin:0 auto;padding:8% 0 40px}
 .login-logo{margin:0 0 24px;text-align:center;font-size:24px;font-weight:600}
 .login-logo a{color:#3c434a;text-decoration:none;display:inline-block}
 .login-logo .logo{height:var(--logo-login-h,84px);max-width:100%;margin:0 auto}
@@ -73,3 +73,8 @@ button.linkbtn{background:none;color:inherit;padding:0;margin-left:16px;font-siz
 .mbox .letter{flex:none;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;background:var(--primary);color:var(--on-primary)}
 .mbox .letter+span{flex:1}
 @media(max-width:600px){.match{grid-template-columns:1fr}}
+
+/* Footer under the box */
+.sitefoot{text-align:center;font-size:13px;margin:16px auto 28px}
+.sitefoot a{color:#1f2937;background:rgba(255,255,255,.8);padding:5px 12px;border-radius:14px;text-decoration:none}
+.sitefoot a:hover{background:#fff;text-decoration:underline}

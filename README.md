@@ -11,6 +11,7 @@ A weekly recap quiz platform for teachers, built for plain LAMP hosting (PHP + M
 - A test can have a time limit in minutes. The student presses Start, a countdown ticks beside the test, and the answers are submitted automatically at zero. The deadline is kept on the server: a submission more than 30 seconds late is not counted (a blank attempt is recorded, so it cannot be retaken), and the deadline never passes the test's closing time.
 - Layout is a centered box on a background color or image of your choice. Colors and logo heights (header and login pages) are set under **Settings**.
 - Teachers can add other teachers/admins under **Accounts** (name and email). The new person gets an emailed activation code (valid 60 minutes) and a link to `admin/activate.php`, where they enter the code and then choose a password; after that they log in with email and password. Accounts also lists everyone, lets you resend a code to someone who has not activated yet, and remove an account. All teachers have the same rights.
+- A small "Weekly Recap Platform <version>" footer under every page links to an About page (project info, GitHub link, credits) that is not in any menu. Under **Settings** it can be hidden from students and visitors; logged-in teachers always see it. The version number is `APP_VERSION` in `src/bootstrap.php`.
 - Teachers can change their own password under **Profile** (current password required, at least 10 characters, attempts rate limited). Changing it signs the teacher out of every other device.
 
 ## Requirements

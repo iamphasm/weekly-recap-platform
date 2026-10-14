@@ -16,6 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim((string)($_POST['site_name'] ?? ''));
     set_setting('site_name', $name === '' ? null : mb_substr($name, 0, 80));
 
+    set_setting('show_footer', isset($_POST['show_footer']) ? null : '0');
+
     foreach (array_keys(THEME_DEFAULTS) as $k) {
         $v = (string)($_POST[$k] ?? '');
         if (!empty($_POST['reset_colors'])) {
@@ -92,6 +94,8 @@ page_header('Settings', 'admin');
     <p><img src="<?= e($bg) ?>" alt="" style="max-height:80px;border-radius:6px">
       <label class="opt"><input type="checkbox" name="remove_bg_image" value="1"> Remove background image</label></p>
   <?php endif; ?>
+  <label class="opt"><input type="checkbox" name="show_footer" value="1" <?= setting('show_footer') === '0' ? '' : 'checked' ?>>
+    Show the "Weekly Recap Platform" footer link to students and visitors <span class="muted small">(logged-in teachers always see it)</span></label>
   <label class="opt"><input type="checkbox" name="reset_colors" value="1"> Reset colors to default</label>
   <button type="submit">Save</button>
 </form>
