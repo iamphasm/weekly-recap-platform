@@ -37,9 +37,11 @@ CREATE TABLE questions (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   test_id INT UNSIGNED NOT NULL,
   position INT NOT NULL DEFAULT 0,
-  type ENUM('single','multi','tf','text') NOT NULL,
+  type ENUM('single','multi','tf','text','match') NOT NULL,
   prompt TEXT NOT NULL,
   explanation TEXT NULL,
+  left_title VARCHAR(80) NULL,            -- 'match' questions: heading above the items (default Categories)
+  right_title VARCHAR(80) NULL,           -- 'match' questions: heading above the descriptions (default Options)
   KEY idx_test (test_id, position),
   FOREIGN KEY (test_id) REFERENCES tests(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -49,7 +51,8 @@ CREATE TABLE options (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   question_id INT UNSIGNED NOT NULL,
   position INT NOT NULL DEFAULT 0,
-  label VARCHAR(500) NOT NULL,
+  label VARCHAR(500) NOT NULL,            -- for 'match' questions: the item on the left
+  pair_label VARCHAR(500) NULL,           -- for 'match' questions: its description on the right
   is_correct TINYINT(1) NOT NULL DEFAULT 0,
   KEY idx_q (question_id, position),
   FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE

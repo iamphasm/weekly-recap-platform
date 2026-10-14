@@ -175,3 +175,17 @@ function send_student_invite(string $email, string $name): bool
     $text = ($name !== '' ? "Hi $name,\n\n" : '') . "Your teacher added you to $site.\nOpen $link, enter your school email ($email) and we will email you a login code.\n";
     return send_mail($email, "You have been added to $site", $html, $text);
 }
+
+function send_teacher_invite(string $name, string $email, string $code): bool
+{
+    $site = site_name();
+    $link = app_url() . '/admin/activate.php';
+    $html = email_shell("You have been invited to $site",
+        '<p>Hi ' . e($name) . ',</p><p>You have been added as a teacher on <b>' . e($site) . '</b>. Your activation code is:</p>'
+        . '<p style="font-size:32px;letter-spacing:6px;font-weight:bold">' . $code . '</p>'
+        . '<p><a href="' . e($link) . '">Open the activation page</a>, enter your email (' . e($email) . ') and this code, then choose a password. '
+        . 'The code is valid for ' . TEACHER_INVITE_TTL_MIN . ' minutes; the page can send you a new one.</p>');
+    $text = "Hi $name,\n\nYou have been added as a teacher on $site.\nYour activation code: $code\n\nEnter it with your email ($email) here: $link\n"
+        . "The code is valid for " . TEACHER_INVITE_TTL_MIN . " minutes; the page can send you a new one.";
+    return send_mail($email, "You have been invited to $site", $html, $text);
+}

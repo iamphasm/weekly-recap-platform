@@ -117,6 +117,25 @@ page_header($test['title']);
       <p class="prompt"><?= nl2br(e($qq['prompt'])) ?></p>
       <?php if ($qq['type'] === 'text'): ?>
         <input type="text" name="<?= e($name) ?>" maxlength="500" autocomplete="off">
+      <?php elseif ($qq['type'] === 'match'): $shuf = shuffled_pairs($qq, (int)$student['id']); ?>
+        <div class="match">
+          <div>
+            <h3><?= e($qq['left_title'] ?: 'Categories') ?>:</h3>
+            <?php foreach ($qq['options'] as $o): ?>
+              <div class="mbox"><span><?= e($o['label']) ?></span>
+                <select name="<?= e($name) ?>[<?= (int)$o['id'] ?>]" aria-label="<?= e($o['label']) ?>">
+                  <option value="">-</option>
+                  <?php foreach ($shuf as $n => $s): ?><option value="<?= e(match_token((int)$qq['id'], (int)$s['id'])) ?>"><?= chr(65 + $n) ?></option><?php endforeach; ?>
+                </select></div>
+            <?php endforeach; ?>
+          </div>
+          <div>
+            <h3><?= e($qq['right_title'] ?: 'Options') ?>:</h3>
+            <?php foreach ($shuf as $n => $s): ?>
+              <div class="mbox"><b class="letter"><?= chr(65 + $n) ?></b><span><?= e($s['pair_label']) ?></span></div>
+            <?php endforeach; ?>
+          </div>
+        </div>
       <?php elseif ($qq['type'] === 'multi'): ?>
         <p class="muted small">Select all that apply.</p>
         <?php foreach ($qq['options'] as $o): ?>
@@ -136,7 +155,9 @@ document.getElementById('quiz').addEventListener('submit', function (ev) {
   var fs = this.querySelectorAll('fieldset'), missing = 0;
   fs.forEach(function (f) {
     var t = f.querySelector('input[type=text]');
-    var answered = t ? t.value.trim() !== '' : f.querySelector('input:checked') !== null;
+    var sels = f.querySelectorAll('select'), answered;
+    if (sels.length) { answered = Array.prototype.every.call(sels, function (x) { return x.value !== ''; }); }
+    else { answered = t ? t.value.trim() !== '' : f.querySelector('input:checked') !== null; }
     if (!answered) { missing++; }
   });
   if (missing && !confirm(missing + ' question(s) unanswered. Submit anyway? You cannot change answers afterwards.')) {
