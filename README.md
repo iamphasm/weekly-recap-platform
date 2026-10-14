@@ -39,8 +39,8 @@ PHPMailer is bundled in `lib/`, so Composer is not needed.
 
    It creates the tables, writes `config/config.php`, logs you in and then refuses to run again.
    If `config/` is not writable, it shows the config file contents so you can create `config/config.php` by hand.
-5. **Customize.** Log in at `https://yourdomain/recap/admin/` and open **Settings** to upload a logo and pick colors.
-   The logo and colors apply to both login pages and the header.
+5. **Customize.** Log in at `https://yourdomain/recap/admin/` and open **Settings** to upload a header logo, an optional separate login-page logo, and pick colors.
+   Without a separate login-page logo, the header logo is used on the login pages too.
 6. **Create the first test.** Admin > Tests > New test. Add questions, tick *Published*, and set the open/close window.
 7. **Tell students the URL**: `https://yourdomain/recap/`.
 

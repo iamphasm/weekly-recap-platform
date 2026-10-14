@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // [form field, setting, remove checkbox, file prefix, label, max MB]
-    foreach ([['logo', 'logo', 'remove_logo', 'logo', 'Logo', 2], ['bg_image', 'bg_image', 'remove_bg_image', 'bg', 'Background image', 5]] as [$field, $key, $removeBox, $prefix, $label, $maxMb]) {
+    foreach ([['logo', 'logo', 'remove_logo', 'logo', 'Header logo', 2], ['login_logo', 'login_logo', 'remove_login_logo', 'loginlogo', 'Login page logo', 2], ['bg_image', 'bg_image', 'remove_bg_image', 'bg', 'Background image', 5]] as [$field, $key, $removeBox, $prefix, $label, $maxMb]) {
         if (!empty($_POST[$removeBox])) {
             if ($old = setting($key)) {
                 @unlink($uploadDir . '/' . basename($old));
@@ -72,15 +72,21 @@ page_header('Settings', 'admin');
 <form method="post" enctype="multipart/form-data" class="card">
   <?= csrf_field() ?>
   <label>Site name <input type="text" name="site_name" maxlength="80" value="<?= e(setting('site_name', '')) ?>" placeholder="<?= e((string)cfg('site_name', 'Weekly Recap')) ?>"></label>
-  <label>Logo <span class="muted small">(PNG, JPG, GIF or WebP, max 2 MB. Shown on the login pages and in the header.)</span>
+  <label>Logo in the top menu header <span class="muted small">(PNG, JPG, GIF or WebP, max 2 MB.)</span>
     <input type="file" name="logo" accept="image/png,image/jpeg,image/gif,image/webp"></label>
   <?php if ($logo = logo_url()): ?>
     <p><img src="<?= e($logo) ?>" alt="" style="max-height:80px;background:#eee;padding:6px;border-radius:6px">
-      <label class="opt"><input type="checkbox" name="remove_logo" value="1"> Remove logo</label></p>
+      <label class="opt"><input type="checkbox" name="remove_logo" value="1"> Remove header logo</label></p>
+  <?php endif; ?>
+  <label>Logo on the login pages <span class="muted small">(optional. If you leave it empty, the header logo is used.)</span>
+    <input type="file" name="login_logo" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+  <?php if ($loginLogo = upload_url('login_logo')): ?>
+    <p><img src="<?= e($loginLogo) ?>" alt="" style="max-height:80px;background:#eee;padding:6px;border-radius:6px">
+      <label class="opt"><input type="checkbox" name="remove_login_logo" value="1"> Remove login page logo</label></p>
   <?php endif; ?>
   <div class="grid2">
-    <label>Logo height in the header (px) <input type="number" name="logo_height" min="<?= LOGO_HEIGHT_RANGE[0] ?>" max="<?= LOGO_HEIGHT_RANGE[1] ?>" value="<?= logo_height('logo_height') ?>"></label>
-    <label>Logo height on login pages (px) <input type="number" name="logo_height_login" min="<?= LOGO_HEIGHT_RANGE[0] ?>" max="<?= LOGO_HEIGHT_RANGE[1] ?>" value="<?= logo_height('logo_height_login') ?>"></label>
+    <label>Header logo height (px) <input type="number" name="logo_height" min="<?= LOGO_HEIGHT_RANGE[0] ?>" max="<?= LOGO_HEIGHT_RANGE[1] ?>" value="<?= logo_height('logo_height') ?>"></label>
+    <label>Login page logo height (px) <input type="number" name="logo_height_login" min="<?= LOGO_HEIGHT_RANGE[0] ?>" max="<?= LOGO_HEIGHT_RANGE[1] ?>" value="<?= logo_height('logo_height_login') ?>"></label>
   </div>
   <div class="grid2">
     <label>Buttons &amp; links <span class="swatch"><input type="color" name="color_primary" value="<?= e(theme_color('color_primary')) ?>"></span></label>
