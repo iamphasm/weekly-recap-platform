@@ -1,4 +1,7 @@
 <?php
+// Weekly Recap Platform - https://github.com/iamphasm/weekly-recap-platform
+// Created by Kristian Daae-Johansen / IamPhasm
+// Stack: PHP + MySQL
 // One-time web installer: creates the database tables, config/config.php and the first teacher account.
 declare(strict_types=1);
 define('INSTALLER', true);
