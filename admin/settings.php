@@ -22,6 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    foreach (LOGO_HEIGHT_DEFAULTS as $k => $default) {
+        $n = (int)($_POST[$k] ?? 0);
+        set_setting($k, !empty($_POST['reset_colors']) ? null : ($n >= LOGO_HEIGHT_RANGE[0] && $n <= LOGO_HEIGHT_RANGE[1] ? (string)$n : null));
+    }
+
     if (!empty($_POST['remove_logo'])) {
         if ($old = setting('logo')) {
             @unlink($uploadDir . '/' . basename($old));
@@ -66,9 +71,14 @@ page_header('Settings', 'admin');
       <label class="opt"><input type="checkbox" name="remove_logo" value="1"> Remove logo</label></p>
   <?php endif; ?>
   <div class="grid2">
+    <label>Logo height in the header (px) <input type="number" name="logo_height" min="<?= LOGO_HEIGHT_RANGE[0] ?>" max="<?= LOGO_HEIGHT_RANGE[1] ?>" value="<?= logo_height('logo_height') ?>"></label>
+    <label>Logo height on login pages (px) <input type="number" name="logo_height_login" min="<?= LOGO_HEIGHT_RANGE[0] ?>" max="<?= LOGO_HEIGHT_RANGE[1] ?>" value="<?= logo_height('logo_height_login') ?>"></label>
+  </div>
+  <div class="grid2">
     <label>Buttons &amp; links <span class="swatch"><input type="color" name="color_primary" value="<?= e(theme_color('color_primary')) ?>"></span></label>
     <label>Header &amp; top bar <span class="swatch"><input type="color" name="color_header" value="<?= e(theme_color('color_header')) ?>"></span></label>
-    <label>Page background <span class="swatch"><input type="color" name="color_bg" value="<?= e(theme_color('color_bg')) ?>"></span></label>
+    <label>Page background (inside the box) <span class="swatch"><input type="color" name="color_bg" value="<?= e(theme_color('color_bg')) ?>"></span></label>
+    <label>Background outside the box <span class="swatch"><input type="color" name="color_outer" value="<?= e(theme_color('color_outer')) ?>"></span></label>
   </div>
   <label class="opt"><input type="checkbox" name="reset_colors" value="1"> Reset colors to default</label>
   <button type="submit">Save</button>

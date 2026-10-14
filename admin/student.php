@@ -1,12 +1,20 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
+ensure_auth_tables(); // adds students.name on older installs
 require_teacher();
 
 $id = (int)($_GET['id'] ?? 0);
 $student = q('SELECT * FROM students WHERE id = ?', [$id])->fetch();
 if (!$student) {
     redirect('admin/students.php');
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+    $name = trim((string)($_POST['name'] ?? ''));
+    q('UPDATE students SET name = ? WHERE id = ?', [$name === '' ? null : mb_substr($name, 0, 120), $id]);
+    flash('Name saved.', 'ok');
+    redirect('admin/student.php?id=' . $id);
 }
 $attempts = q('SELECT a.*, t.title FROM attempts a JOIN tests t ON t.id = a.test_id WHERE a.student_id = ? ORDER BY a.submitted_at', [$id])->fetchAll();
 $points = array_map(fn($a) => pct((int)$a['score'], (int)$a['max_score']), $attempts);
@@ -38,9 +46,15 @@ function curve_svg(array $points): string
     return $svg . '</svg>';
 }
 
-page_header($student['email'], 'admin');
+page_header(student_label($student), 'admin');
 ?>
-<h1><?= e($student['email']) ?></h1>
+<h1><?= e(student_label($student)) ?></h1>
+<form method="post" class="card">
+  <?= csrf_field() ?>
+  <p class="muted"><?= e($student['email']) ?></p>
+  <label>Name <span class="muted small">(optional, only teachers see it)</span> <input type="text" name="name" maxlength="120" value="<?= e((string)$student['name']) ?>"></label>
+  <button type="submit">Save name</button>
+</form>
 <p class="muted">First seen <?= e(fmt_dt($student['first_seen'])) ?> - <?= count($attempts) ?> recap(s) completed
   <?php if ($points): ?> - average <?= (int)round(array_sum($points) / count($points)) ?>%<?php endif; ?></p>
 <?php if ($attempts): ?>

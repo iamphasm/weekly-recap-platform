@@ -144,7 +144,22 @@ function pct(int $score, int $max): int
 
 // ---- branding (editable by teachers under Admin > Settings) ----
 
-const THEME_DEFAULTS = ['color_primary' => '#3858e9', 'color_bg' => '#f0f0f1', 'color_header' => '#1d2327'];
+const THEME_DEFAULTS = ['color_primary' => '#3858e9', 'color_bg' => '#f0f0f1', 'color_header' => '#1d2327', 'color_outer' => '#d5d8dc'];
+const LOGO_HEIGHT_DEFAULTS = ['logo_height' => 36, 'logo_height_login' => 84]; // px: header, login pages
+const LOGO_HEIGHT_RANGE = [16, 200];
+
+function logo_height(string $key): int
+{
+    $v = (int)setting($key, (string)LOGO_HEIGHT_DEFAULTS[$key]);
+    return ($v >= LOGO_HEIGHT_RANGE[0] && $v <= LOGO_HEIGHT_RANGE[1]) ? $v : LOGO_HEIGHT_DEFAULTS[$key];
+}
+
+/** Name if the teacher gave one, otherwise the email. */
+function student_label(array $s): string
+{
+    $n = trim((string)($s['name'] ?? ''));
+    return $n !== '' ? $n : (string)$s['email'];
+}
 
 function setting(string $key, ?string $default = null): ?string
 {
@@ -200,7 +215,8 @@ function html_head(string $title, string $bodyClass = ''): void
         . '<title>' . e($title) . ' - ' . e(site_name()) . '</title>'
         . '<link rel="stylesheet" href="' . e(url('assets/style.css')) . '">'
         . '<style>:root{--primary:' . $p . ';--on-primary:' . contrast_color($p) . ';--bg:' . theme_color('color_bg')
-        . ';--header:' . $h . ';--on-header:' . contrast_color($h) . '}</style>'
+        . ';--header:' . $h . ';--on-header:' . contrast_color($h) . ';--outer:' . theme_color('color_outer')
+        . ';--logo-h:' . logo_height('logo_height') . 'px;--logo-login-h:' . logo_height('logo_height_login') . 'px}</style>'
         . '</head><body class="' . e($bodyClass) . '">';
 }
 
@@ -216,7 +232,7 @@ function brand_html(int $logoHeight = 0): string
 function page_header(string $title, string $area = 'student'): void
 {
     html_head($title);
-    echo '<header class="top"><div class="wrap"><a class="brand" href="' . e(url($area === 'admin' ? 'admin/' : '')) . '">' . brand_html() . '</a>';
+    echo '<div class="site"><header class="top"><div class="wrap"><a class="brand" href="' . e(url($area === 'admin' ? 'admin/' : '')) . '">' . brand_html() . '</a>';
     if ($area === 'admin' && !empty($_SESSION['teacher_id'])) {
         echo '<nav><a href="' . e(url('admin/')) . '">Tests</a>'
             . '<a href="' . e(url('admin/students.php')) . '">Students</a>'
@@ -237,7 +253,7 @@ function page_header(string $title, string $area = 'student'): void
 
 function page_footer(): void
 {
-    echo '</main></body></html>';
+    echo '</main></div></body></html>';
 }
 
 /** WordPress-style centered login layout: logo, white card, links underneath. */
