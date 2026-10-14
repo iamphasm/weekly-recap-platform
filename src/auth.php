@@ -13,6 +13,7 @@ const DEVICE_ROTATE_DAYS = 7;
 const TEACHER_FAILS_PER_IP_HOUR = 10;
 const TEACHER_SLOWDOWN_AFTER_EMAIL_FAILS = 20; // slows guessing against one account without ever locking the real teacher out
 const DEVICE_COOKIE = 'recap_device';
+const TEACHER_INVITE_TTL_MIN = 60;   // same 10 wrong guesses per hour as any code, so a longer life adds no guesses
 
 /** Create the sign-in tables if an older install is missing them (needs the CREATE privilege). */
 function ensure_auth_tables(): void
@@ -27,6 +28,16 @@ function ensure_auth_tables(): void
     }
     if (!q("SHOW COLUMNS FROM students LIKE 'name'")->fetch()) {
         db()->exec('ALTER TABLE students ADD COLUMN name VARCHAR(120) NULL AFTER email');
+    }
+    $qtype = q("SHOW COLUMNS FROM questions LIKE 'type'")->fetch();
+    if ($qtype && !str_contains((string)$qtype['Type'], "'match'")) {
+        db()->exec("ALTER TABLE questions MODIFY type ENUM('single','multi','tf','text','match') NOT NULL");
+    }
+    if (!q("SHOW COLUMNS FROM questions LIKE 'left_title'")->fetch()) {
+        db()->exec('ALTER TABLE questions ADD COLUMN left_title VARCHAR(80) NULL, ADD COLUMN right_title VARCHAR(80) NULL');
+    }
+    if (!q("SHOW COLUMNS FROM options LIKE 'pair_label'")->fetch()) {
+        db()->exec('ALTER TABLE options ADD COLUMN pair_label VARCHAR(500) NULL AFTER label');
     }
     if (!q("SHOW COLUMNS FROM tests LIKE 'time_limit_min'")->fetch()) {
         db()->exec('ALTER TABLE tests ADD COLUMN time_limit_min SMALLINT UNSIGNED NULL AFTER published');
@@ -115,7 +126,7 @@ function ip_allow(string $ip): bool
  * Prepare a new code for $email. Returns [status, code]; status is one of
  * 'sent' (caller must email $code), 'cooldown' (a code was just sent, nothing to do), 'limited', 'locked'.
  */
-function create_login_code(string $email): array
+function create_login_code(string $email, int $ttlMin = CODE_TTL_MIN): array
 {
     maybe_prune_auth_tables();
     $pdo = db();
@@ -146,7 +157,7 @@ function create_login_code(string $email): array
         }
         $code = sprintf('%06d', random_int(0, 999999));
         q('UPDATE login_challenges SET code_hash = ?, expires_at = ?, last_sent = ?, requests = ?, attempts = ?, window_start = ? WHERE email = ?',
-            [code_hash($email, $code), date('Y-m-d H:i:s', $now + CODE_TTL_MIN * 60), now_s(), $r['requests'] + 1, $r['attempts'], $windowStart, $email]);
+            [code_hash($email, $code), date('Y-m-d H:i:s', $now + $ttlMin * 60), now_s(), $r['requests'] + 1, $r['attempts'], $windowStart, $email]);
         $pdo->commit();
         return ['sent', $code];
     } catch (Throwable $e) {
@@ -275,4 +286,27 @@ function forget_this_device(): void
     }
     set_device_cookie(null);
     unset($_SESSION['student_id'], $_SESSION['student_email'], $_SESSION['pending_email'], $_SESSION['device_id']);
+}
+
+// ---- inviting teachers ----
+
+/** Key under which a teacher's activation code is kept (cannot collide with a student's email address). */
+function teacher_code_key(string $email): string
+{
+    return 'teacher:' . $email;
+}
+
+/** Email a pending teacher a fresh activation code. Returns 'sent', 'recent' (one went out a moment ago), 'limited' or 'failed'. */
+function issue_teacher_invite(array $teacher): string
+{
+    $key = teacher_code_key($teacher['email']);
+    [$status, $code] = create_login_code($key, TEACHER_INVITE_TTL_MIN);
+    if ($status !== 'sent') {
+        return $status === 'cooldown' ? 'recent' : 'limited';
+    }
+    if (send_teacher_invite($teacher['name'], $teacher['email'], $code)) {
+        return 'sent';
+    }
+    revoke_login_code($key);
+    return 'failed';
 }

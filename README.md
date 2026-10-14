@@ -2,15 +2,16 @@
 
 A weekly recap quiz platform for teachers, built for plain LAMP hosting (PHP + MySQL, no build step).
 
-- Teachers create weekly tests (single choice, multiple choice, true/false, short text).
+- Teachers create weekly tests (single choice, multiple choice, true/false, short text, matching).
 - Students enter their school email. On a new device they get a one-time code by email; after that the browser stays signed in.
 - Correct answers are shown only after submitting, and a debrief email is sent.
 - A monthly recap email goes to each student with activity that month.
 - Teachers see per-test results, per-student learning curves, and can set logo, site name and colors.
 - Teachers can add students by hand under **Students** (school email, optional name). The student gets an invitation email linking to the login page, where they get their code as usual. The name is shown only to teachers.
 - A test can have a time limit in minutes. The student presses Start, a countdown ticks beside the test, and the answers are submitted automatically at zero. The deadline is kept on the server: a submission more than 30 seconds late is not counted (a blank attempt is recorded, so it cannot be retaken), and the deadline never passes the test's closing time.
-- Layout is a centered box on a background color of your choice. Colors and logo heights (header and login pages) are set under **Settings**.
-- Teachers can change their own password under **Account** (current password required, at least 10 characters, attempts rate limited). Changing it signs the teacher out of every other device.
+- Layout is a centered box on a background color or image of your choice. Colors and logo heights (header and login pages) are set under **Settings**.
+- Teachers can add other teachers/admins under **Accounts** (name and email). The new person gets an emailed activation code (valid 60 minutes) and a link to `admin/activate.php`, where they enter the code and then choose a password; after that they log in with email and password. Accounts also lists everyone, lets you resend a code to someone who has not activated yet, and remove an account. All teachers have the same rights.
+- Teachers can change their own password under **Profile** (current password required, at least 10 characters, attempts rate limited). Changing it signs the teacher out of every other device.
 
 ## Requirements
 
@@ -67,6 +68,7 @@ Berlin
 - **Multiple choice:** one or more `*` lines; students must select exactly the correct set.
 - **True / False:** pick the correct answer from a dropdown.
 - **Short text:** one accepted answer per line (case and extra spaces are ignored).
+- **Matching:** one pair per line, `item = description`. Students see the items on the left, each with a dropdown, and the lettered descriptions (shuffled per student) on the right. The two column headings are editable per question (defaults: Categories / Options). The question counts as correct only if every pair is right.
 
 Questions lock once a student has submitted, so earlier results stay consistent.
 
@@ -104,4 +106,4 @@ Questions lock once a student has submitted, so earlier results stay consistent.
 
 ## Upgrading older installs
 
-If your database was created earlier, import the missing upgrade files once: `sql/upgrade_settings.sql` (Settings page) and `sql/upgrade_otp.sql` (email login codes) and `sql/upgrade_session_version.sql` (teacher password change) and `sql/upgrade_student_name.sql` (student names) and `sql/upgrade_timer.sql` (test time limits). The app also creates these tables/columns itself on first use if the database user may alter tables.
+If your database was created earlier, import the missing upgrade files once: `sql/upgrade_settings.sql` (Settings page) and `sql/upgrade_otp.sql` (email login codes) and `sql/upgrade_session_version.sql` (teacher password change) and `sql/upgrade_student_name.sql` (student names) and `sql/upgrade_timer.sql` (test time limits) and `sql/upgrade_matching.sql` (matching questions). The app also creates these tables/columns itself on first use if the database user may alter tables.

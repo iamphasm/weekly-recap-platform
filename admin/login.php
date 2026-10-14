@@ -79,4 +79,4 @@ document.getElementById('pw-toggle').addEventListener('click', function () {
   i.type = i.type === 'password' ? 'text' : 'password';
 });
 </script>
-<?php login_footer('<a href="' . e(url('')) . '">&larr; Student login</a>');
+<?php login_footer('<a href="' . e(url('')) . '">&larr; Student login</a><br><a href="' . e(url('admin/activate.php')) . '">Invited as a teacher? Activate your account</a>');

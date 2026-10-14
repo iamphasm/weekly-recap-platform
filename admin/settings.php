@@ -27,31 +27,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting($k, !empty($_POST['reset_colors']) ? null : ($n >= LOGO_HEIGHT_RANGE[0] && $n <= LOGO_HEIGHT_RANGE[1] ? (string)$n : null));
     }
 
-    if (!empty($_POST['remove_logo'])) {
-        if ($old = setting('logo')) {
-            @unlink($uploadDir . '/' . basename($old));
-        }
-        set_setting('logo', null);
-    }
-
-    $f = $_FILES['logo'] ?? null;
-    if ($f && $f['error'] !== UPLOAD_ERR_NO_FILE) {
-        $info = $f['error'] === UPLOAD_ERR_OK && $f['size'] <= 2 * 1024 * 1024 ? @getimagesize($f['tmp_name']) : false;
-        if (!$info || !isset($types[$info['mime']])) {
-            $errors[] = 'Logo must be a PNG, JPG, GIF or WebP image up to 2 MB.';
-        } else {
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-            if ($old = setting('logo')) {
+    // [form field, setting, remove checkbox, file prefix, label, max MB]
+    foreach ([['logo', 'logo', 'remove_logo', 'logo', 'Logo', 2], ['bg_image', 'bg_image', 'remove_bg_image', 'bg', 'Background image', 5]] as [$field, $key, $removeBox, $prefix, $label, $maxMb]) {
+        if (!empty($_POST[$removeBox])) {
+            if ($old = setting($key)) {
                 @unlink($uploadDir . '/' . basename($old));
             }
-            $file = 'logo-' . bin2hex(random_bytes(4)) . '.' . $types[$info['mime']];
-            if (move_uploaded_file($f['tmp_name'], $uploadDir . '/' . $file)) {
-                set_setting('logo', $file);
-            } else {
-                $errors[] = 'Could not save the logo (is uploads writable?).';
-            }
+            set_setting($key, null);
+        }
+        $f = $_FILES[$field] ?? null;
+        if (!$f || $f['error'] === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        $info = $f['error'] === UPLOAD_ERR_OK && $f['size'] <= $maxMb * 1024 * 1024 ? @getimagesize($f['tmp_name']) : false;
+        if (!$info || !isset($types[$info['mime']])) {
+            $errors[] = "$label must be a PNG, JPG, GIF or WebP image up to $maxMb MB.";
+            continue;
+        }
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        if ($old = setting($key)) {
+            @unlink($uploadDir . '/' . basename($old));
+        }
+        $file = $prefix . '-' . bin2hex(random_bytes(4)) . '.' . $types[$info['mime']];
+        if (move_uploaded_file($f['tmp_name'], $uploadDir . '/' . $file)) {
+            set_setting($key, $file);
+        } else {
+            $errors[] = "Could not save the $label (is uploads writable?).";
         }
     }
     $errors ? flash(implode(' ', $errors)) : flash('Settings saved.', 'ok');
@@ -80,6 +83,12 @@ page_header('Settings', 'admin');
     <label>Page background (inside the box) <span class="swatch"><input type="color" name="color_bg" value="<?= e(theme_color('color_bg')) ?>"></span></label>
     <label>Background outside the box <span class="swatch"><input type="color" name="color_outer" value="<?= e(theme_color('color_outer')) ?>"></span></label>
   </div>
+  <label>Background image outside the box <span class="muted small">(optional, replaces the color above. PNG, JPG, GIF or WebP, max 5 MB. A wide photo works best.)</span>
+    <input type="file" name="bg_image" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+  <?php if ($bg = upload_url('bg_image')): ?>
+    <p><img src="<?= e($bg) ?>" alt="" style="max-height:80px;border-radius:6px">
+      <label class="opt"><input type="checkbox" name="remove_bg_image" value="1"> Remove background image</label></p>
+  <?php endif; ?>
   <label class="opt"><input type="checkbox" name="reset_colors" value="1"> Reset colors to default</label>
   <button type="submit">Save</button>
 </form>

@@ -33,14 +33,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['teacher_ver'] = (int)q('SELECT session_version FROM teachers WHERE id = ?', [$teacher['id']])->fetchColumn();
             session_regenerate_id(true);
             flash('Password changed.', 'ok');
-            redirect('admin/account.php');
+            redirect('admin/profile.php');
         }
     }
 }
 
-page_header('Account', 'admin');
+page_header('Profile', 'admin');
 ?>
-<h1>Account</h1>
+<h1>Profile</h1>
 <p class="muted"><?= e($teacher['name']) ?> - <?= e($teacher['email']) ?></p>
 <form method="post" class="card" autocomplete="off">
   <h2 style="margin-top:0">Change password</h2>

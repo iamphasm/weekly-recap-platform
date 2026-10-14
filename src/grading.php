@@ -6,6 +6,7 @@ const QUESTION_TYPES = [
     'multi'  => 'Multiple choice (several answers)',
     'tf'     => 'True / False',
     'text'   => 'Short text answer',
+    'match'  => 'Matching (items to descriptions)',
 ];
 
 /** Questions of a test, each with an 'options' array, ordered. */
@@ -26,6 +27,24 @@ function load_questions(int $testId): array
         $qq['options'] = $by[$qq['id']] ?? [];
     }
     return $qs;
+}
+
+/**
+ * Opaque stand-in for an option id in a matching question's dropdowns. The real id of a description equals the id of
+ * the item it belongs to, so putting it in the page would give the answers away. Resolved again in parse_response().
+ */
+function match_token(int $questionId, int $optionId): string
+{
+    $_SESSION['match_salt'] ??= bin2hex(random_bytes(16));
+    return substr(hash_hmac('sha256', $questionId . '|' . $optionId, $_SESSION['match_salt']), 0, 20);
+}
+
+/** Descriptions of a matching question in this student's own stable order (differs per student, same on reload). */
+function shuffled_pairs(array $question, int $studentId): array
+{
+    $opts = $question['options'];
+    usort($opts, fn($a, $b) => strcmp(md5($studentId . '-' . $a['id']), md5($studentId . '-' . $b['id'])));
+    return $opts;
 }
 
 function norm_text(string $s): string
@@ -52,6 +71,19 @@ function parse_response(array $question, $raw)
             $out = array_values(array_unique($out));
             sort($out);
             return $out ?: null;
+        case 'match': // [left option id => id of the option whose description was picked]
+            $byToken = [];
+            foreach ($question['options'] as $o) {
+                $byToken[match_token((int)$question['id'], (int)$o['id'])] = (int)$o['id'];
+            }
+            $out = [];
+            foreach ($question['options'] as $o) {
+                $t = (is_array($raw) && isset($raw[$o['id']]) && is_scalar($raw[$o['id']])) ? (string)$raw[$o['id']] : '';
+                if (isset($byToken[$t])) {
+                    $out[(int)$o['id']] = $byToken[$t];
+                }
+            }
+            return $out ?: null;
         default:
             $s = is_scalar($raw) ? trim((string)$raw) : '';
             return $s === '' ? null : mb_substr($s, 0, 500);
@@ -62,6 +94,19 @@ function is_response_correct(array $question, $response): bool
 {
     if ($response === null) {
         return false;
+    }
+    if ($question['type'] === 'match') { // every item needs a description equal to its own (all or nothing)
+        $pair = [];
+        foreach ($question['options'] as $o) {
+            $pair[(int)$o['id']] = norm_text((string)$o['pair_label']);
+        }
+        foreach ($pair as $id => $text) {
+            $picked = (int)($response[$id] ?? 0);
+            if (!isset($pair[$picked]) || $pair[$picked] !== $text) {
+                return false;
+            }
+        }
+        return true;
     }
     $correct = [];
     foreach ($question['options'] as $o) {
@@ -95,6 +140,14 @@ function describe_response(array $question, $response): string
     if ($question['type'] === 'text') {
         return (string)$response;
     }
+    if ($question['type'] === 'match') {
+        $desc = array_column($question['options'], 'pair_label', 'id');
+        $parts = [];
+        foreach ($question['options'] as $o) {
+            $parts[] = $o['label'] . ' → ' . ($desc[(int)($response[(int)$o['id']] ?? 0)] ?? '(no answer)');
+        }
+        return implode('; ', $parts);
+    }
     $labels = [];
     foreach ($question['options'] as $o) {
         if (in_array((int)$o['id'], (array)$response, true)) {
@@ -106,6 +159,9 @@ function describe_response(array $question, $response): string
 
 function describe_correct(array $question): string
 {
+    if ($question['type'] === 'match') {
+        return implode('; ', array_map(fn($o) => $o['label'] . ' → ' . $o['pair_label'], $question['options']));
+    }
     $labels = [];
     foreach ($question['options'] as $o) {
         if ($o['is_correct']) {
@@ -143,8 +199,24 @@ function save_question(int $testId, ?int $questionId, array $in): ?string
         return 'The question text is required.';
     }
 
-    $options = []; // [label, correct]
-    if ($type === 'tf') {
+    $options = []; // [label, correct, pair_label]
+    if ($type === 'match') {
+        foreach (preg_split('/\R/', (string)($in['options'] ?? '')) as $line) {
+            if (trim($line) === '') {
+                continue;
+            }
+            [$left, $right] = array_pad(explode('=', $line, 2), 2, '');
+            $left = trim($left);
+            $right = trim($right);
+            if ($left === '' || $right === '') {
+                return 'Write each pair as: item = description (both sides are required).';
+            }
+            $options[] = [mb_substr($left, 0, 500), true, mb_substr($right, 0, 500)];
+        }
+        if (count($options) < 2) {
+            return 'Enter at least two pairs.';
+        }
+    } elseif ($type === 'tf') {
         $answer = ($in['tf_answer'] ?? 'true') === 'false' ? 'false' : 'true';
         $options = [['True', $answer === 'true'], ['False', $answer === 'false']];
     } else {
@@ -182,22 +254,28 @@ function save_question(int $testId, ?int $questionId, array $in): ?string
         }
     }
 
+    $leftTitle = $rightTitle = null;
+    if ($type === 'match') {
+        $leftTitle = mb_substr(trim((string)($in['left_title'] ?? '')), 0, 80) ?: null;
+        $rightTitle = mb_substr(trim((string)($in['right_title'] ?? '')), 0, 80) ?: null;
+    }
+
     $pdo = db();
     $pdo->beginTransaction();
     try {
         if ($questionId) {
-            q('UPDATE questions SET type=?, prompt=?, explanation=? WHERE id=? AND test_id=?',
-                [$type, $prompt, $explanation ?: null, $questionId, $testId]);
+            q('UPDATE questions SET type=?, prompt=?, explanation=?, left_title=?, right_title=? WHERE id=? AND test_id=?',
+                [$type, $prompt, $explanation ?: null, $leftTitle, $rightTitle, $questionId, $testId]);
             q('DELETE FROM options WHERE question_id = ?', [$questionId]);
         } else {
             $pos = (int)q('SELECT COALESCE(MAX(position),0)+1 FROM questions WHERE test_id = ?', [$testId])->fetchColumn();
-            q('INSERT INTO questions (test_id, position, type, prompt, explanation) VALUES (?,?,?,?,?)',
-                [$testId, $pos, $type, $prompt, $explanation ?: null]);
+            q('INSERT INTO questions (test_id, position, type, prompt, explanation, left_title, right_title) VALUES (?,?,?,?,?,?,?)',
+                [$testId, $pos, $type, $prompt, $explanation ?: null, $leftTitle, $rightTitle]);
             $questionId = (int)$pdo->lastInsertId();
         }
-        foreach ($options as $i => [$label, $correct]) {
-            q('INSERT INTO options (question_id, position, label, is_correct) VALUES (?,?,?,?)',
-                [$questionId, $i + 1, $label, $correct ? 1 : 0]);
+        foreach ($options as $i => [$label, $correct, $pair]) {
+            q('INSERT INTO options (question_id, position, label, pair_label, is_correct) VALUES (?,?,?,?,?)',
+                [$questionId, $i + 1, $label, $pair ?? null, $correct ? 1 : 0]);
         }
         $pdo->commit();
     } catch (Throwable $e) {

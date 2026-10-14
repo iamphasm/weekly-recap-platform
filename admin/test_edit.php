@@ -63,7 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect("admin/test_edit.php?id=$id");
         }
         $editQ = ['id' => $qid, 'type' => $_POST['type'] ?? 'single', 'prompt' => $_POST['prompt'] ?? '',
-                  'explanation' => $_POST['explanation'] ?? '', 'raw' => $_POST['options'] ?? '', 'tf' => $_POST['tf_answer'] ?? 'true'];
+                  'explanation' => $_POST['explanation'] ?? '', 'raw' => $_POST['options'] ?? '', 'tf' => $_POST['tf_answer'] ?? 'true',
+                  'lt' => $_POST['left_title'] ?? '', 'rt' => $_POST['right_title'] ?? ''];
     }
 }
 
@@ -83,12 +84,19 @@ if (!$editQ && $editId && !$locked) {
                     }
                 }
             }
+            if ($qq['type'] === 'match') {
+                $raw = '';
+                foreach ($qq['options'] as $o) {
+                    $raw .= $o['label'] . ' = ' . $o['pair_label'] . "\n";
+                }
+            }
             $editQ = ['id' => $qq['id'], 'type' => $qq['type'], 'prompt' => $qq['prompt'],
-                      'explanation' => $qq['explanation'], 'raw' => trim($raw), 'tf' => $tf];
+                      'explanation' => $qq['explanation'], 'raw' => trim($raw), 'tf' => $tf,
+                      'lt' => (string)$qq['left_title'], 'rt' => (string)$qq['right_title']];
         }
     }
 }
-$editQ ??= ['id' => null, 'type' => 'single', 'prompt' => '', 'explanation' => '', 'raw' => '', 'tf' => 'true'];
+$editQ ??= ['id' => null, 'type' => 'single', 'prompt' => '', 'explanation' => '', 'raw' => '', 'tf' => 'true', 'lt' => '', 'rt' => ''];
 
 // Default window: next Monday 08:00 -> following Sunday 23:59
 $defOpen = $test['opens_at'] ?? date('Y-m-d 08:00:00', strtotime('monday this week'));
@@ -147,6 +155,10 @@ page_header($test ? 'Edit test' : 'New test', 'admin');
       <label><span id="opts-label">Options</span> <textarea name="options" id="opts"><?= e($editQ['raw']) ?></textarea></label>
       <p class="muted small" id="opts-help"></p>
     </div>
+    <div id="match-box" class="grid2">
+      <label>Heading above the items <input type="text" name="left_title" maxlength="80" value="<?= e($editQ['lt']) ?>" placeholder="Categories"></label>
+      <label>Heading above the descriptions <input type="text" name="right_title" maxlength="80" value="<?= e($editQ['rt']) ?>" placeholder="Options"></label>
+    </div>
     <div id="tf-box">
       <label>Correct answer
         <select name="tf_answer"><option value="true" <?= $editQ['tf'] === 'true' ? 'selected' : '' ?>>True</option>
@@ -162,13 +174,15 @@ page_header($test ? 'Edit test' : 'New test', 'admin');
     var help = {
       single: 'One option per line. Start the correct one with * (e.g. *Paris).',
       multi: 'One option per line. Start every correct option with *.',
-      text: 'One accepted answer per line (case and extra spaces are ignored).'
+      text: 'One accepted answer per line (case and extra spaces are ignored).',
+      match: 'One pair per line: item = description (e.g. Step 1 = The scanner finds hosts). Students see the items on the left and the descriptions, shuffled, on the right. The question counts as correct only if every pair is right.'
     };
     function upd() {
       var t = sel.value;
       document.getElementById('tf-box').style.display = t === 'tf' ? '' : 'none';
       document.getElementById('opts-box').style.display = t === 'tf' ? 'none' : '';
-      document.getElementById('opts-label').textContent = t === 'text' ? 'Accepted answers' : 'Options';
+      document.getElementById('match-box').style.display = t === 'match' ? '' : 'none';
+      document.getElementById('opts-label').textContent = t === 'text' ? 'Accepted answers' : (t === 'match' ? 'Pairs' : 'Options');
       document.getElementById('opts-help').textContent = help[t] || '';
     }
     sel.addEventListener('change', upd); upd();

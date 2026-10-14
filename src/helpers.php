@@ -187,10 +187,16 @@ function site_name(): string
     return setting('site_name') ?: (string)cfg('site_name', 'Weekly Recap');
 }
 
+/** URL of an uploaded image kept in the setting $key (file name inside uploads/), or null. */
+function upload_url(string $key): ?string
+{
+    $f = setting($key);
+    return $f && is_file(__DIR__ . '/../uploads/' . $f) ? url('uploads/' . $f) . '?v=' . filemtime(__DIR__ . '/../uploads/' . $f) : null;
+}
+
 function logo_url(): ?string
 {
-    $f = setting('logo');
-    return $f && is_file(__DIR__ . '/../uploads/' . $f) ? url('uploads/' . $f) . '?v=' . filemtime(__DIR__ . '/../uploads/' . $f) : null;
+    return upload_url('logo');
 }
 
 function theme_color(string $key): string
@@ -216,7 +222,9 @@ function html_head(string $title, string $bodyClass = ''): void
         . '<link rel="stylesheet" href="' . e(url('assets/style.css')) . '">'
         . '<style>:root{--primary:' . $p . ';--on-primary:' . contrast_color($p) . ';--bg:' . theme_color('color_bg')
         . ';--header:' . $h . ';--on-header:' . contrast_color($h) . ';--outer:' . theme_color('color_outer')
-        . ';--logo-h:' . logo_height('logo_height') . 'px;--logo-login-h:' . logo_height('logo_height_login') . 'px}</style>'
+        . ';--logo-h:' . logo_height('logo_height') . 'px;--logo-login-h:' . logo_height('logo_height_login') . 'px}'
+        . (($bg = upload_url('bg_image')) ? 'body{background-image:url(' . e($bg) . ');background-size:cover;background-position:center;background-attachment:fixed;background-repeat:no-repeat}' : '')
+        . '</style>'
         . '</head><body class="' . e($bodyClass) . '">';
 }
 
@@ -237,7 +245,8 @@ function page_header(string $title, string $area = 'student'): void
         echo '<nav><a href="' . e(url('admin/')) . '">Tests</a>'
             . '<a href="' . e(url('admin/students.php')) . '">Students</a>'
             . '<a href="' . e(url('admin/settings.php')) . '">Settings</a>'
-            . '<a href="' . e(url('admin/account.php')) . '">Account</a>'
+            . '<a href="' . e(url('admin/accounts.php')) . '">Accounts</a>'
+            . '<a href="' . e(url('admin/profile.php')) . '">Profile</a>'
             . '<form method="post" action="' . e(url('admin/logout.php')) . '" class="inline">' . csrf_field()
             . '<button class="linkbtn">Log out</button></form></nav>';
     } elseif ($area === 'student' && !empty($_SESSION['student_id'])) {

@@ -29,6 +29,14 @@ page_header('Results');
     <p class="prompt"><?= nl2br(e($qq['prompt'])) ?></p>
     <?php if ($qq['type'] === 'text'): ?>
       <p>Your answer: <b><?= e(describe_response($qq, $a['response'])) ?></b></p>
+    <?php elseif ($qq['type'] === 'match'):
+        $desc = array_column($qq['options'], 'pair_label', 'id'); ?>
+      <?php foreach ($qq['options'] as $o):
+          $picked = (int)($a['response'][(int)$o['id']] ?? 0);
+          $good = isset($desc[$picked]) && norm_text((string)$desc[$picked]) === norm_text((string)$o['pair_label']); ?>
+        <div class="opt <?= $good ? 'is-correct' : 'is-wrong' ?>"><b><?= e($o['label']) ?></b> &rarr; <?= e($desc[$picked] ?? '(no answer)') ?>
+          <?= $good ? '' : '<br><span class="small">Correct: ' . e($o['pair_label']) . '</span>' ?></div>
+      <?php endforeach; ?>
     <?php else: ?>
       <?php foreach ($qq['options'] as $o):
           $chosen = in_array((int)$o['id'], (array)$a['response'], true);
@@ -38,7 +46,7 @@ page_header('Results');
           <?= $chosen && !$o['is_correct'] ? ' <span class="tag bad">your answer</span>' : '' ?></div>
       <?php endforeach; ?>
     <?php endif; ?>
-    <?php if (!$a['is_correct']): ?><p>Correct answer: <b><?= e(describe_correct($qq)) ?></b></p><?php endif; ?>
+    <?php if (!$a['is_correct'] && $qq['type'] !== 'match'): ?><p>Correct answer: <b><?= e(describe_correct($qq)) ?></b></p><?php endif; ?>
     <?php if ($qq['explanation']): ?><p class="muted"><?= nl2br(e($qq['explanation'])) ?></p><?php endif; ?>
   </div>
 <?php endforeach; ?>
