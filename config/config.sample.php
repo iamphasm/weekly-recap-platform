@@ -1,4 +1,7 @@
 <?php
+// Weekly Recap Platform - https://github.com/iamphasm/weekly-recap-platform
+// Created by Kristian Daae-Johansen / IamPhasm
+// Stack: PHP + MySQL
 // Copy to config/config.php and fill in.
 return [
     'base_url' => 'https://example.com/recap',   // public URL, no trailing slash

@@ -1,4 +1,7 @@
 <?php
+// Weekly Recap Platform - https://github.com/iamphasm/weekly-recap-platform
+// Created by Kristian Daae-Johansen / IamPhasm
+// Stack: PHP + MySQL
 // Sends the monthly recap email to every student with activity in the month.
 // Usage:  php cron/monthly.php            -> previous month (run on the 1st)
 //         php cron/monthly.php 2026-10    -> a specific month (safe to re-run; already-sent students are skipped)
