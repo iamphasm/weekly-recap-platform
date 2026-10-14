@@ -29,8 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('A teacher with that email already exists.');
         } else {
             // No password yet: an empty hash can never match a login until the invited person sets one.
-            q('INSERT INTO teachers (name, email, password_hash, created_at) VALUES (?,?,?,?)',
-                [mb_substr($name, 0, 120), $email, '', date('Y-m-d H:i:s')]);
+            // Random starting session_version: if a removed teacher's id is ever reused (MySQL can do that after a restart),
+            // the old teacher's leftover session must not match the new account.
+            q('INSERT INTO teachers (name, email, password_hash, session_version, created_at) VALUES (?,?,?,?,?)',
+                [mb_substr($name, 0, 120), $email, '', random_int(1000, 2000000000), date('Y-m-d H:i:s')]);
             $invite(q('SELECT * FROM teachers WHERE email = ?', [$email])->fetch());
         }
     } elseif ($action === 'resend') {
