@@ -39,11 +39,15 @@ function match_token(int $questionId, int $optionId): string
     return substr(hash_hmac('sha256', $questionId . '|' . $optionId, $_SESSION['match_salt']), 0, 20);
 }
 
-/** Descriptions of a matching question in this student's own stable order (differs per student, same on reload). */
-function shuffled_pairs(array $question, int $studentId): array
+/**
+ * Descriptions of a matching question in an order that is stable for this login session but cannot be worked out
+ * from anything on the page (it is sorted by the secret tokens, not by ids a student can see).
+ */
+function shuffled_pairs(array $question): array
 {
     $opts = $question['options'];
-    usort($opts, fn($a, $b) => strcmp(md5($studentId . '-' . $a['id']), md5($studentId . '-' . $b['id'])));
+    $qid = (int)$question['id'];
+    usort($opts, fn($a, $b) => strcmp(match_token($qid, (int)$a['id']), match_token($qid, (int)$b['id'])));
     return $opts;
 }
 

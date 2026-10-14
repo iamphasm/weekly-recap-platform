@@ -117,7 +117,7 @@ page_header($test['title']);
       <p class="prompt"><?= nl2br(e($qq['prompt'])) ?></p>
       <?php if ($qq['type'] === 'text'): ?>
         <input type="text" name="<?= e($name) ?>" maxlength="500" autocomplete="off">
-      <?php elseif ($qq['type'] === 'match'): $shuf = shuffled_pairs($qq, (int)$student['id']); ?>
+      <?php elseif ($qq['type'] === 'match'): $shuf = shuffled_pairs($qq); ?>
         <div class="match">
           <div>
             <h3><?= e($qq['left_title'] ?: 'Categories') ?>:</h3>
