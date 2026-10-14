@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/src/bootstrap.php';
+ensure_auth_tables(); // timer column on older installs
 $student = require_student();
 
 $now = date('Y-m-d H:i:s');
@@ -26,7 +27,7 @@ page_header('Recaps');
   <h2>Open recaps</h2>
   <?php foreach ($open as $t): ?>
     <div class="card row">
-      <div><b><?= e($t['title']) ?></b><br><span class="muted small"><?= (int)$t['nq'] ?> questions - open until <?= e(fmt_dt($t['closes_at'])) ?></span></div>
+      <div><b><?= e($t['title']) ?></b><br><span class="muted small"><?= (int)$t['nq'] ?> questions<?= $t['time_limit_min'] ? ' - ' . (int)$t['time_limit_min'] . ' min' : '' ?> - open until <?= e(fmt_dt($t['closes_at'])) ?></span></div>
       <?php if ($t['done']): ?>
         <a class="btn secondary" href="<?= e(url('result.php?id=' . $t['id'])) ?>">See results</a>
       <?php else: ?>

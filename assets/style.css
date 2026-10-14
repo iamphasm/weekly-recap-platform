@@ -58,3 +58,9 @@ body.login{border-top:4px solid var(--header,#1d2327);min-height:100vh}
 .swatch{display:flex;gap:12px;align-items:center}.swatch input[type=color]{width:56px;height:38px;padding:2px;margin:0}
 button.linkbtn{background:none;color:inherit;padding:0;margin-left:16px;font-size:14px;font-weight:400;text-decoration:underline;border-radius:0}
 .login-links button.linkbtn{margin:0 0 12px;color:#50575e;font-size:13px}
+
+/* Countdown for timed tests: beside the box on wide screens, a bar across the top on narrow ones */
+.timer{position:fixed;top:90px;right:16px;width:130px;padding:12px;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);z-index:10}
+.timer b{display:block;font-size:30px;font-variant-numeric:tabular-nums}
+.timer.low{background:#fee2e2;border-color:#dc2626;color:#991b1b}
+@media(max-width:1179px){.timer{top:0;left:0;right:0;width:auto;border-radius:0;border-width:0 0 1px;padding:6px}.timer b{display:inline;margin-left:8px;font-size:22px}}

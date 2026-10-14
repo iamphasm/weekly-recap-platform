@@ -1,7 +1,10 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/src/bootstrap.php';
+ensure_auth_tables(); // timer column/table on older installs
 $student = require_student();
+
+const TIME_GRACE_SECONDS = 30; // slack for the automatic submit at zero to arrive
 
 $testId = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
 $now = date('Y-m-d H:i:s');
@@ -13,7 +16,7 @@ if (!$test) {
 if (q('SELECT 1 FROM attempts WHERE test_id = ? AND student_id = ?', [$testId, $student['id']])->fetch()) {
     redirect('result.php?id=' . $testId);
 }
-if ($test['opens_at'] > $now || $test['closes_at'] < $now) {
+if ($test['opens_at'] > $now || $test['closes_at'] < date('Y-m-d H:i:s', time() - TIME_GRACE_SECONDS)) {
     flash('That recap is not open right now.');
     redirect('recap.php');
 }
@@ -23,12 +26,51 @@ if (!$questions) {
     redirect('recap.php');
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$limitMin = (int)($test['time_limit_min'] ?? 0);
+$isPost = $_SERVER['REQUEST_METHOD'] === 'POST';
+if ($isPost) {
     csrf_check();
+}
+
+// Timed test: the clock starts when the student presses Start, and the deadline is kept on the server.
+$deadline = null;
+if ($limitMin > 0) {
+    $startedAt = q('SELECT started_at FROM test_starts WHERE test_id = ? AND student_id = ?', [$testId, $student['id']])->fetchColumn();
+    if (!$startedAt) {
+        if ($isPost && ($_POST['action'] ?? '') === 'start') {
+            q('INSERT IGNORE INTO test_starts (test_id, student_id, started_at) VALUES (?,?,?)', [$testId, $student['id'], $now]);
+        } elseif (!$isPost) {
+            page_header($test['title']);
+            ?>
+            <h1><?= e($test['title']) ?></h1>
+            <?php if ($test['description']): ?><p><?= nl2br(e($test['description'])) ?></p><?php endif; ?>
+            <form method="post" class="card">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= $testId ?>"><input type="hidden" name="action" value="start">
+              <p>This recap is <b>timed</b>: you have <b><?= $limitMin ?> minute<?= $limitMin === 1 ? '' : 's' ?></b> from the moment you press Start.
+                When time runs out your answers are submitted automatically, and you can only take it once.</p>
+              <button type="submit">Start</button>
+            </form>
+            <?php
+            page_footer();
+            exit;
+        }
+        redirect('take.php?id=' . $testId);
+    }
+    $deadline = min(strtotime((string)$startedAt) + $limitMin * 60, strtotime($test['closes_at'])); // never later than the closing time
+    if ($isPost && ($_POST['action'] ?? '') === 'start') {
+        redirect('take.php?id=' . $testId); // double click on Start
+    }
+}
+$timedOut = $deadline !== null && time() > $deadline + TIME_GRACE_SECONDS;
+
+if (($isPost && ($_POST['action'] ?? '') !== 'start') || $timedOut) {
+    // Past the deadline the answers are not counted (a blank attempt is recorded so the test cannot be retaken).
+    $answers = (!$timedOut && is_array($_POST['q'] ?? null)) ? $_POST['q'] : [];
     $score = 0;
     $graded = [];
     foreach ($questions as $qq) {
-        $resp = parse_response($qq, $_POST['q'][$qq['id']] ?? null);
+        $resp = parse_response($qq, $answers[$qq['id']] ?? null);
         $ok = is_response_correct($qq, $resp);
         $score += $ok ? 1 : 0;
         $graded[] = [$qq['id'], $resp, $ok];
@@ -52,6 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         throw $e;
     }
     send_weekly_debrief($attemptId);
+    if ($timedOut) {
+        flash('Time ran out before the answers were submitted, so they were not counted.');
+    }
     redirect('result.php?id=' . $testId);
 }
 
@@ -59,6 +104,9 @@ page_header($test['title']);
 ?>
 <h1><?= e($test['title']) ?></h1>
 <?php if ($test['description']): ?><p><?= nl2br(e($test['description'])) ?></p><?php endif; ?>
+<?php if ($deadline !== null): $left = max(0, $deadline - time()); ?>
+  <div class="timer" id="timer" role="timer" aria-live="off"><span class="small">Time left</span><b id="tleft"><?= sprintf('%d:%02d', intdiv($left, 60), $left % 60) ?></b></div>
+<?php endif; ?>
 <p class="muted small">You can only submit once. You'll see the correct answers after you submit all your answers.</p>
 <form method="post" id="quiz">
   <?= csrf_field() ?>
@@ -95,5 +143,19 @@ document.getElementById('quiz').addEventListener('submit', function (ev) {
     ev.preventDefault();
   }
 });
+<?php if ($deadline !== null): ?>
+var quiz = document.getElementById('quiz'), tleft = document.getElementById('tleft'), timer = document.getElementById('timer');
+var endAt = performance.now() + <?= max(0, $deadline - time()) ?> * 1000, sent = false;
+(function tick() {
+  var s = Math.max(0, Math.ceil((endAt - performance.now()) / 1000));
+  tleft.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  if (s <= 60) { timer.classList.add('low'); }
+  if (s === 0) {
+    if (!sent) { sent = true; quiz.submit(); }
+    return;
+  }
+  setTimeout(tick, 250);
+})();
+<?php endif; ?>
 </script>
 <?php page_footer();

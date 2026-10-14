@@ -163,31 +163,15 @@ function send_monthly_recap(array $student, string $month): bool
     return send_mail($student['email'], "Your monthly recap: $label", $html, $text);
 }
 
-const INVITE_CODE_TTL_MIN = 1440; // a code in an invitation email may be read hours later
-
-/**
- * Teacher added a student: email them a sign-in code and a link to the code page.
- * Returns 'sent', 'recent' (a code went out a moment ago, nothing sent) or 'failed'.
- */
-function send_student_invite(string $email, string $name): string
+/** Teacher added a student: tell them so and link to the login page (they get their code there). True if sent. */
+function send_student_invite(string $email, string $name): bool
 {
-    [$status, $code] = create_login_code($email, INVITE_CODE_TTL_MIN);
-    if ($status !== 'sent') {
-        return $status === 'cooldown' ? 'recent' : 'failed';
-    }
     $site = site_name();
-    $link = app_url() . '/index.php?email=' . rawurlencode($email);
+    $link = app_url() . '/';
     $hello = $name !== '' ? 'Hi ' . e($name) . ',' : 'Hi,';
     $html = email_shell("You have been added to $site",
-        "<p>$hello</p><p>Your teacher added you to <b>" . e($site) . '</b>. Your login code is:</p>'
-        . '<p style="font-size:32px;letter-spacing:6px;font-weight:bold">' . $code . '</p>'
-        . '<p><a href="' . e($link) . '">Open the login page</a> and enter the code. It is valid for 24 hours; '
-        . 'after that you can request a new one on the same page with your school email.</p>');
-    $text = ($name !== '' ? "Hi $name,\n\n" : '') . "Your teacher added you to $site.\nYour login code: $code\n\nEnter it here: $link\n"
-        . "It is valid for 24 hours; after that you can request a new one with your school email.";
-    if (send_mail($email, "You have been added to $site", $html, $text)) {
-        return 'sent';
-    }
-    revoke_login_code($email);
-    return 'failed';
+        "<p>$hello</p><p>Your teacher added you to <b>" . e($site) . '</b>.</p>'
+        . '<p><a href="' . e($link) . '">Open the login page</a>, enter your school email (' . e($email) . ') and we will email you a login code.</p>');
+    $text = ($name !== '' ? "Hi $name,\n\n" : '') . "Your teacher added you to $site.\nOpen $link, enter your school email ($email) and we will email you a login code.\n";
+    return send_mail($email, "You have been added to $site", $html, $text);
 }

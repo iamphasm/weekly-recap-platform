@@ -64,11 +64,6 @@ if ($action === 'email') {
     }
 }
 
-// Link from the invitation email: jump straight to entering the emailed code.
-if (!$post && isset($_GET['email']) && is_school_email(normalize_email((string)$_GET['email']))) {
-    $_SESSION['pending_email'] = normalize_email((string)$_GET['email']);
-}
-
 $pending = $_SESSION['pending_email'] ?? null;
 $switched = isset($_GET['switched']);
 
