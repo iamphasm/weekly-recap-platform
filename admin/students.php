@@ -1,20 +1,54 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
+ensure_auth_tables(); // adds students.name on older installs
 require_teacher();
 
-$rows = q('SELECT s.id, s.email, s.last_seen, COUNT(a.id) AS n, AVG(a.score/a.max_score*100) AS avgp,
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+    $email = normalize_email((string)($_POST['email'] ?? ''));
+    $name = trim((string)($_POST['name'] ?? ''));
+    $name = $name === '' ? '' : mb_substr($name, 0, 120);
+    if (!is_school_email($email)) {
+        $domains = cfg('school_domains', []);
+        flash('Enter a school email' . ($domains ? ' (@' . implode(', @', $domains) . ')' : '') . '.');
+    } else {
+        $now = date('Y-m-d H:i:s');
+        q('INSERT INTO students (email, name, first_seen, last_seen) VALUES (?,?,?,?)
+           ON DUPLICATE KEY UPDATE name = IF(VALUES(name) IS NULL, name, VALUES(name))', [$email, $name === '' ? null : $name, $now, $now]);
+        $r = send_student_invite($email, $name);
+        if ($r === 'sent') {
+            flash("Student added. A login code was emailed to $email.", 'ok');
+        } elseif ($r === 'recent') {
+            flash("Student added. A code was emailed to $email a moment ago; they can also request one on the login page.", 'ok');
+        } else {
+            flash("Student added, but the email to $email could not be sent (check the mail settings, or the limit on codes per hour). They can request a code on the login page.");
+        }
+    }
+    redirect('admin/students.php');
+}
+
+$rows = q('SELECT s.id, s.email, s.name, s.last_seen, COUNT(a.id) AS n, AVG(a.score/a.max_score*100) AS avgp,
                   (SELECT a2.score/a2.max_score*100 FROM attempts a2 WHERE a2.student_id = s.id ORDER BY a2.submitted_at DESC LIMIT 1) AS lastp
            FROM students s LEFT JOIN attempts a ON a.student_id = s.id GROUP BY s.id ORDER BY s.email')->fetchAll();
 
 page_header('Students', 'admin');
 ?>
 <h1>Students</h1>
+<form method="post" class="card">
+  <?= csrf_field() ?>
+  <b>Add student</b> <span class="muted small">- they get an email with a login code. Adding an existing email updates the name.</span>
+  <div class="grid2">
+    <label>School email <input type="email" name="email" required></label>
+    <label>Name <span class="muted small">(optional)</span> <input type="text" name="name" maxlength="120"></label>
+  </div>
+  <button type="submit">Add and send code</button>
+</form>
 <table>
-  <tr><th>Email</th><th>Recaps done</th><th>Average</th><th>Latest</th><th>Last seen</th></tr>
+  <tr><th>Student</th><th>Recaps done</th><th>Average</th><th>Latest</th><th>Last seen</th></tr>
   <?php foreach ($rows as $r): ?>
     <tr>
-      <td><a href="<?= e(url('admin/student.php?id=' . $r['id'])) ?>"><?= e($r['email']) ?></a></td>
+      <td><a href="<?= e(url('admin/student.php?id=' . $r['id'])) ?>"><?= e(student_label($r)) ?></a><?php if (trim((string)$r['name']) !== ''): ?> <span class="muted small"><?= e($r['email']) ?></span><?php endif; ?></td>
       <td><?= (int)$r['n'] ?></td>
       <td><?= $r['avgp'] === null ? '-' : round((float)$r['avgp']) . '%' ?></td>
       <td><?= $r['lastp'] === null ? '-' : round((float)$r['lastp']) . '%' ?></td>

@@ -7,6 +7,8 @@ A weekly recap quiz platform for teachers, built for plain LAMP hosting (PHP + M
 - Correct answers are shown only after submitting, and a debrief email is sent.
 - A monthly recap email goes to each student with activity that month.
 - Teachers see per-test results, per-student learning curves, and can set logo, site name and colors.
+- Teachers can add students by hand under **Students** (school email, optional name). The student gets an email with a login code (valid 24 hours) and a link to the code page. The name is shown only to teachers.
+- Layout is a centered box on a background color of your choice. Colors and logo heights (header and login pages) are set under **Settings**.
 - Teachers can change their own password under **Account** (current password required, at least 10 characters, attempts rate limited). Changing it signs the teacher out of every other device.
 
 ## Requirements
@@ -101,4 +103,4 @@ Questions lock once a student has submitted, so earlier results stay consistent.
 
 ## Upgrading older installs
 
-If your database was created earlier, import the missing upgrade files once: `sql/upgrade_settings.sql` (Settings page) and `sql/upgrade_otp.sql` (email login codes) and `sql/upgrade_session_version.sql` (teacher password change). The app also creates these tables/columns itself on first use if the database user may alter tables.
+If your database was created earlier, import the missing upgrade files once: `sql/upgrade_settings.sql` (Settings page) and `sql/upgrade_otp.sql` (email login codes) and `sql/upgrade_session_version.sql` (teacher password change) and `sql/upgrade_student_name.sql` (student names). The app also creates these tables/columns itself on first use if the database user may alter tables.

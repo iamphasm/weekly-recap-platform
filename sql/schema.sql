@@ -13,6 +13,7 @@ CREATE TABLE teachers (
 CREATE TABLE students (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(190) NOT NULL UNIQUE,
+  name VARCHAR(120) NULL,                            -- optional display name set by the teacher
   first_seen DATETIME NOT NULL,
   last_seen DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
