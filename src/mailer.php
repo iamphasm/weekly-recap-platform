@@ -22,6 +22,7 @@ function send_mail(string $to, string $subject, string $html, string $text): boo
                 $mail->Username = $m['smtp_user'];
                 $mail->Password = $m['smtp_pass'] ?? '';
             }
+            $mail->Timeout = 10; // PHPMailer's default is 300 s, longer than PHP-FPM/proxy limits, so a dead SMTP host hung the page
             $mail->CharSet = 'UTF-8';
             $mail->setFrom($fromEmail, $fromName);
             $mail->addAddress($to);
