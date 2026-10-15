@@ -9,6 +9,17 @@ require_teacher();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
+    if (($_POST['action'] ?? '') === 'delete') {
+        $st = q('SELECT id, email, photo FROM students WHERE id = ?', [(int)($_POST['id'] ?? 0)])->fetch();
+        if ($st) {
+            // Results, answers, trusted devices, test starts and monthly-mail records go with the student (foreign keys).
+            q('DELETE FROM students WHERE id = ?', [$st['id']]);
+            delete_avatar_file($st['photo'] ?? null);
+            q('DELETE FROM login_challenges WHERE email = ?', [$st['email']]);
+            flash("Deleted {$st['email']} and all of their results.", 'ok');
+        }
+        redirect('admin/students.php');
+    }
     $email = normalize_email((string)($_POST['email'] ?? ''));
     $name = trim((string)($_POST['name'] ?? ''));
     $name = $name === '' ? '' : mb_substr($name, 0, 120);
@@ -36,7 +47,7 @@ page_header('Students', 'admin');
 ?>
 <h1>Students</h1>
 <form method="post" class="card">
-  <?= csrf_field() ?>
+  <?= csrf_field() ?><input type="hidden" name="action" value="add">
   <b>Add student</b> <span class="muted small">- they get an invitation email. Adding an existing email updates the name.</span>
   <div class="grid2">
     <label>School email <input type="email" name="email" required></label>
@@ -45,7 +56,7 @@ page_header('Students', 'admin');
   <button type="submit">Add and send invitation</button>
 </form>
 <table>
-  <tr><th>Student</th><th>Recaps done</th><th>Average</th><th>Latest</th><th>Last seen</th></tr>
+  <tr><th>Student</th><th>Recaps done</th><th>Average</th><th>Latest</th><th>Last seen</th><th></th></tr>
   <?php foreach ($rows as $r): ?>
     <tr>
       <td><a href="<?= e(url('admin/student.php?id=' . $r['id'])) ?>"><?= e(student_label($r)) ?></a><?php if (trim((string)$r['name']) !== ''): ?> <span class="muted small"><?= e($r['email']) ?></span><?php endif; ?></td>
@@ -53,8 +64,10 @@ page_header('Students', 'admin');
       <td><?= $r['avgp'] === null ? '-' : round((float)$r['avgp']) . '%' ?></td>
       <td><?= $r['lastp'] === null ? '-' : round((float)$r['lastp']) . '%' ?></td>
       <td class="small"><?= e(fmt_dt($r['last_seen'])) ?></td>
+      <td><form method="post" class="inline"><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+        <button class="danger" onclick="return confirm('Delete <?= e(addslashes($r['email'])) ?> and all of their results? This cannot be undone.')">Delete</button></form></td>
     </tr>
   <?php endforeach; ?>
-  <?php if (!$rows): ?><tr><td colspan="5" class="muted">No students yet.</td></tr><?php endif; ?>
+  <?php if (!$rows): ?><tr><td colspan="6" class="muted">No students yet.</td></tr><?php endif; ?>
 </table>
 <?php page_footer();

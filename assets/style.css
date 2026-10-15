@@ -80,3 +80,9 @@ button.linkbtn{background:none;color:inherit;padding:0;margin-left:16px;font-siz
 .login-links:last-child{margin-bottom:32px}
 .sitefoot a{color:#1f2937;background:rgba(255,255,255,.8);padding:5px 12px;border-radius:14px;text-decoration:none}
 .sitefoot a:hover{background:#fff;text-decoration:underline}
+
+/* Student profile */
+.ava{display:inline-block;width:30px;height:30px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;background:rgba(255,255,255,.25);text-align:center;line-height:30px;font-size:14px;font-weight:600}
+.top nav a.me{display:inline-flex;align-items:center}
+.profile-pic{width:120px;height:120px;border-radius:50%;object-fit:cover;background:#e5e7eb;display:block;margin:0 0 8px}
+.bio{white-space:pre-wrap}
