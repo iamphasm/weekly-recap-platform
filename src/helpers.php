@@ -241,6 +241,84 @@ function brand_html(string $which = 'logo'): string
     return e(site_name());
 }
 
+// ---- student profile pictures (kept outside public reach and served by avatar.php to the student and to teachers) ----
+
+const AVATAR_PX = 300;
+
+function avatar_dir(): string
+{
+    $d = APP_ROOT . '/uploads/avatars';
+    if (!is_dir($d)) {
+        @mkdir($d, 0755, true);
+    }
+    if (is_dir($d) && !is_file($d . '/.htaccess')) {
+        @file_put_contents($d . '/.htaccess', "Options -Indexes\n<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder allow,deny\nDeny from all\n</IfModule>\n");
+    }
+    return $d;
+}
+
+function avatar_file_ok(?string $f): bool
+{
+    return $f !== null && preg_match('/^[0-9a-f]{32}\.(jpg|png|gif|webp)$/', $f) === 1 && is_file(APP_ROOT . '/uploads/avatars/' . $f);
+}
+
+function delete_avatar_file(?string $f): void
+{
+    if ($f !== null && preg_match('/^[0-9a-f]{32}\.(jpg|png|gif|webp)$/', $f)) {
+        @unlink(APP_ROOT . '/uploads/avatars/' . $f);
+    }
+}
+
+/** URL of a student's picture (only the student and teachers may fetch it), or null. */
+function avatar_url(array $student): ?string
+{
+    $f = $student['photo'] ?? null;
+    return avatar_file_ok($f) ? url('avatar.php?id=' . (int)$student['id']) . '&v=' . filemtime(APP_ROOT . '/uploads/avatars/' . $f) : null;
+}
+
+/** Small round picture, or the first letter of the name when there is no picture. */
+function avatar_html(array $student): string
+{
+    if ($u = avatar_url($student)) {
+        return '<img class="ava" src="' . e($u) . '" alt="">';
+    }
+    return '<span class="ava">' . e(mb_strtoupper(mb_substr(student_label($student), 0, 1))) . '</span>';
+}
+
+/**
+ * Validate an uploaded picture and store it. With GD it is re-encoded as a 300x300 JPEG, which also strips location
+ * data and anything hidden in the file. Returns [file name, null] or [null, error message].
+ */
+function store_avatar(array $f): array
+{
+    $types = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+    $info = ($f['error'] === UPLOAD_ERR_OK && $f['size'] <= 2 * 1024 * 1024) ? @getimagesize($f['tmp_name']) : false;
+    if (!$info || !isset($types[$info['mime']]) || $info[0] < 1 || $info[0] > 6000 || $info[1] < 1 || $info[1] > 6000) {
+        return [null, 'The picture must be a PNG, JPG, GIF or WebP image up to 2 MB.'];
+    }
+    $dir = avatar_dir();
+    $name = bin2hex(random_bytes(16));
+    if (function_exists('imagecreatefromstring') && function_exists('imagejpeg')) {
+        $src = @imagecreatefromstring((string)file_get_contents($f['tmp_name']));
+        if (!$src) {
+            return [null, 'That image could not be read.'];
+        }
+        $w = imagesx($src);
+        $h = imagesy($src);
+        $side = min($w, $h);
+        $dst = imagecreatetruecolor(AVATAR_PX, AVATAR_PX);
+        imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
+        imagecopyresampled($dst, $src, 0, 0, intdiv($w - $side, 2), intdiv($h - $side, 2), AVATAR_PX, AVATAR_PX, $side, $side);
+        $file = $name . '.jpg';
+        if (!imagejpeg($dst, $dir . '/' . $file, 85)) {
+            return [null, 'Could not save the picture (is uploads writable?).'];
+        }
+        return [$file, null];
+    }
+    $file = $name . '.' . $types[$info['mime']];
+    return move_uploaded_file($f['tmp_name'], $dir . '/' . $file) ? [$file, null] : [null, 'Could not save the picture (is uploads writable?).'];
+}
+
 function page_header(string $title, string $area = 'student'): void
 {
     html_head($title);
@@ -254,7 +332,10 @@ function page_header(string $title, string $area = 'student'): void
             . '<form method="post" action="' . e(url('admin/logout.php')) . '" class="inline">' . csrf_field()
             . '<button class="linkbtn">Log out</button></form></nav>';
     } elseif ($area === 'student' && !empty($_SESSION['student_id'])) {
-        echo '<nav><span class="muted">' . e($_SESSION['student_email'] ?? '') . '</span>'
+        $me = current_student();
+        echo '<nav>' . ($me
+                ? '<a class="me" href="' . e(url('profile.php')) . '">' . avatar_html($me) . e(student_label($me)) . '</a>'
+                : '<span class="muted">' . e($_SESSION['student_email'] ?? '') . '</span>')
             . '<form method="post" action="' . e(url('index.php')) . '" class="inline">' . csrf_field()
             . '<input type="hidden" name="action" value="switch"><button class="linkbtn">Not you?</button></form></nav>';
     }
@@ -340,6 +421,9 @@ function require_teacher(): array
 // Minimal fallbacks so the app still runs on hosts without the mbstring extension.
 if (!function_exists('mb_strtolower')) {
     function mb_strtolower(string $s): string { return strtolower($s); }
+}
+if (!function_exists('mb_strtoupper')) {
+    function mb_strtoupper(string $s): string { return strtoupper($s); }
 }
 if (!function_exists('mb_substr')) {
     function mb_substr(string $s, int $start, ?int $len = null): string

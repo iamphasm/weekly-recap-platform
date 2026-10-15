@@ -23,7 +23,7 @@ $history = q('SELECT a.test_id, a.score, a.max_score, a.submitted_at, t.title FR
 
 page_header('Recaps');
 ?>
-<h1>Hi!</h1>
+<h1>Hi<?= trim((string)($student['name'] ?? '')) !== '' ? ', ' . e($student['name']) : '' ?>!</h1>
 <?php if (!$open): ?>
   <div class="card"><p>There is no recap open right now. Check back when your teacher tells you a new one is ready.</p></div>
 <?php else: ?>

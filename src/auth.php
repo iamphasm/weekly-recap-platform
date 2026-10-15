@@ -32,6 +32,9 @@ function ensure_auth_tables(): void
     if (!q("SHOW COLUMNS FROM students LIKE 'name'")->fetch()) {
         db()->exec('ALTER TABLE students ADD COLUMN name VARCHAR(120) NULL AFTER email');
     }
+    if (!q("SHOW COLUMNS FROM students LIKE 'bio'")->fetch()) {
+        db()->exec('ALTER TABLE students ADD COLUMN bio VARCHAR(500) NULL AFTER name, ADD COLUMN photo VARCHAR(60) NULL AFTER bio');
+    }
     $qtype = q("SHOW COLUMNS FROM questions LIKE 'type'")->fetch();
     if ($qtype && !str_contains((string)$qtype['Type'], "'match'")) {
         db()->exec("ALTER TABLE questions MODIFY type ENUM('single','multi','tf','text','match') NOT NULL");

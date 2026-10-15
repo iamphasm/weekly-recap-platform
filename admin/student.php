@@ -54,8 +54,10 @@ page_header(student_label($student), 'admin');
 <h1><?= e(student_label($student)) ?></h1>
 <form method="post" class="card">
   <?= csrf_field() ?>
+  <?php if ($pic = avatar_url($student)): ?><img class="profile-pic" src="<?= e($pic) ?>" alt=""><?php endif; ?>
   <p class="muted"><?= e($student['email']) ?></p>
-  <label>Name <span class="muted small">(optional, only teachers see it)</span> <input type="text" name="name" maxlength="120" value="<?= e((string)$student['name']) ?>"></label>
+  <?php if (trim((string)($student['bio'] ?? '')) !== ''): ?><p class="bio"><?= e($student['bio']) ?></p><?php endif; ?>
+  <label>Name <span class="muted small">(optional; the student can also set it on their own profile page)</span> <input type="text" name="name" maxlength="120" value="<?= e((string)$student['name']) ?>"></label>
   <button type="submit">Save name</button>
 </form>
 <p class="muted">First seen <?= e(fmt_dt($student['first_seen'])) ?> - <?= count($attempts) ?> recap(s) completed
@@ -73,4 +75,10 @@ page_header(student_label($student), 'admin');
 <?php else: ?>
   <p>No recaps completed yet.</p>
 <?php endif; ?>
+<form method="post" action="<?= e(url('admin/students.php')) ?>" class="card">
+  <?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int)$student['id'] ?>">
+  <b>Delete this student</b>
+  <p class="muted small">Removes the account and all <?= count($attempts) ?> recap result(s), which also changes the test statistics. This cannot be undone. The student can sign up again later with a fresh, empty account.</p>
+  <button class="danger" onclick="return confirm('Delete <?= e(addslashes($student['email'])) ?> and all of their results? This cannot be undone.')">Delete student</button>
+</form>
 <?php page_footer();

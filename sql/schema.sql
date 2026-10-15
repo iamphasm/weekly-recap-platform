@@ -13,7 +13,9 @@ CREATE TABLE teachers (
 CREATE TABLE students (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(190) NOT NULL UNIQUE,
-  name VARCHAR(120) NULL,                            -- optional display name set by the teacher
+  name VARCHAR(120) NULL,                            -- optional display name (the student or a teacher can set it)
+  bio VARCHAR(500) NULL,                             -- short text the student writes on their profile page
+  photo VARCHAR(60) NULL,                            -- profile picture file name in uploads/avatars/
   first_seen DATETIME NOT NULL,
   last_seen DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
