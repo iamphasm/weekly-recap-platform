@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.png" alt="Weekly Recap" width="360"></p>
+
 # Weekly Recap Platform
 
 A weekly recap quiz platform for teachers, built for plain LAMP hosting (PHP + MySQL, no build step).

@@ -197,9 +197,10 @@ function upload_url(string $key): ?string
     return $f && is_file(__DIR__ . '/../uploads/' . $f) ? url('uploads/' . $f) . '?v=' . filemtime(__DIR__ . '/../uploads/' . $f) : null;
 }
 
-function logo_url(): ?string
+/** The uploaded header logo, or the bundled default logo (assets/logo.png) when none is set. */
+function logo_url(): string
 {
-    return upload_url('logo');
+    return upload_url('logo') ?: url('assets/logo.png') . '?v=' . filemtime(__DIR__ . '/../assets/logo.png');
 }
 
 function theme_color(string $key): string
@@ -236,7 +237,8 @@ function brand_html(string $which = 'logo'): string
 {
     $logo = ($which === 'login_logo' ? upload_url('login_logo') : null) ?: logo_url();
     if ($logo) {
-        return '<img class="logo" src="' . e($logo) . '" alt="' . e(site_name()) . '">';
+        $default = upload_url('logo') === null && !($which === 'login_logo' && upload_url('login_logo'));
+        return '<img class="logo' . ($default && $which !== 'login_logo' ? ' logo-default' : '') . '" src="' . e($logo) . '" alt="' . e(site_name()) . '">';
     }
     return e(site_name());
 }

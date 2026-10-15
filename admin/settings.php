@@ -74,10 +74,12 @@ page_header('Settings', 'admin');
   <label>Site name <input type="text" name="site_name" maxlength="80" value="<?= e(setting('site_name', '')) ?>" placeholder="<?= e((string)cfg('site_name', 'Weekly Recap')) ?>"></label>
   <label>Logo in the top menu header <span class="muted small">(PNG, JPG, GIF or WebP, max 2 MB.)</span>
     <input type="file" name="logo" accept="image/png,image/jpeg,image/gif,image/webp"></label>
-  <?php if ($logo = logo_url()): ?>
-    <p><img src="<?= e($logo) ?>" alt="" style="max-height:80px;background:#eee;padding:6px;border-radius:6px">
-      <label class="opt"><input type="checkbox" name="remove_logo" value="1"> Remove header logo</label></p>
-  <?php endif; ?>
+  <p><img src="<?= e(logo_url()) ?>" alt="" style="max-height:80px;background:#eee;padding:6px;border-radius:6px">
+    <?php if (upload_url('logo')): ?>
+      <label class="opt"><input type="checkbox" name="remove_logo" value="1"> Remove header logo (go back to the default logo)</label>
+    <?php else: ?>
+      <span class="muted small">Default logo</span>
+    <?php endif; ?></p>
   <label>Logo on the login pages <span class="muted small">(optional. If you leave it empty, the header logo is used.)</span>
     <input type="file" name="login_logo" accept="image/png,image/jpeg,image/gif,image/webp"></label>
   <?php if ($loginLogo = upload_url('login_logo')): ?>
