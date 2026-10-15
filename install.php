@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = 'This database already contains Weekly Recap tables. Use an empty database or remove them first.';
             } else {
                 $sql = (string)file_get_contents(APP_ROOT . '/sql/schema.sql');
-                $sql = preg_replace('/^\s*--.*$/m', '', $sql);
+                $sql = preg_replace('/\s--[^\n]*$/m', '', $sql); // comments, also after a column definition
                 foreach (array_filter(array_map('trim', explode(';', $sql))) as $stmt) {
                     $pdo->exec($stmt);
                 }

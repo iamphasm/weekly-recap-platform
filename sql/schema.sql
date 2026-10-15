@@ -27,7 +27,7 @@ CREATE TABLE tests (
   opens_at DATETIME NOT NULL,
   closes_at DATETIME NOT NULL,
   published TINYINT(1) NOT NULL DEFAULT 0,
-  time_limit_min SMALLINT UNSIGNED NULL,             -- minutes allowed once a student starts; NULL = untimed
+  time_limit_min SMALLINT UNSIGNED NULL,             -- minutes allowed once a student starts (empty = untimed)
   created_by INT UNSIGNED NULL,
   created_at DATETIME NOT NULL,
   KEY idx_window (published, opens_at, closes_at),
