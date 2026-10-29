@@ -5,10 +5,10 @@
 declare(strict_types=1);
 
 define('APP_ROOT', dirname(__DIR__));
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.6.1';
 const APP_REPO_URL = 'https://github.com/iamphasm/weekly-recap-platform';
 
-// Never show PHP errors to visitors; they go to the server error log.
+// Never show PHP errors to visitors; they are written to the server error log.
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
